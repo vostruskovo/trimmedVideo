@@ -1,0 +1,108 @@
+Video Splitter — Optimized (No Freeze)
+A high-performance, browser-based video trimming and export tool with anti-freeze optimizations, auto-generated captions, and real-time playback controls.
+
+✨ Features
+🔄 Smooth Playback – Frame throttling (30 FPS), hardware acceleration, and buffering enabled by default.
+
+✂️ Precise Trimming – Set start/end times via sliders, manual input, percentage, or keyboard shortcuts.
+
+🎤 Auto-Generated Captions – Uses browser speech recognition to create captions, exportable as SRT.
+
+🎚️ Audio & Speed Controls – Adjust volume (up to 3x), playback speed (0.25x–4x), and normalize audio.
+
+📤 Optimized Export – Resize to 720p, MP4/WebM support, metadata correction, and chunked recording to prevent freezing.
+
+⌨️ Keyboard Shortcuts – Full keyboard navigation for play/pause, frame stepping, and time setting.
+
+📁 Multiple Upload Methods – Upload files directly or load from a direct video URL.
+
+🚀 Performance Optimizations (Always On)
+✅ Frame Throttling – Limits UI draws to 30 FPS.
+
+✅ Hardware Acceleration – Uses GPU decoding when available.
+
+✅ 720p Resize – Reduces decode load during export.
+
+✅ Buffering + 250ms Chunks – Smoother recording and export.
+
+✅ MP4 + Metadata – Ensures exported videos play correctly everywhere.
+
+🖥️ How to Use
+1. Upload a Video
+File Upload: Choose a video file (MP4, WebM, MOV, AVI, MKV – up to 1GB recommended).
+
+Video Link: Enter a direct video URL (must end with .mp4, .webm, etc.).
+
+2. Set Trim Points
+Drag the Start and End sliders.
+
+Type times manually (e.g., 1:23.45).
+
+Use percentage inputs (0%–100%).
+
+Click Set Start / Set End while playing.
+
+3. Preview
+Click Preview to play only the selected segment.
+
+4. Adjust Settings
+Volume: Increase/decrease export volume (0.5x–3x).
+
+Speed: Change playback speed (0.25x–4x).
+
+Audio: Mute, normalize, or adjust volume.
+
+Video: Resize to 720p, choose MP4 or WebM.
+
+5. Generate Captions
+Click Generate to create captions from audio (Chrome/Edge only).
+Export as SRT when done.
+
+6. Export
+Click Export Video to download the trimmed clip.
+
+⌨️ Keyboard Shortcuts
+Key	Action
+Space	Play/Pause
+← →	Step frame backward/forward
+S	Set start to current time
+E	Set end to current time
+[ ]	Decrease/increase playback speed
+⚙️ Export Settings
+Format: MP4 (recommended) or WebM.
+
+Resolution: Auto-resize to 720p (optional).
+
+Audio: Mute, volume boost, normalization.
+
+Metadata: Ensures correct duration in players.
+
+Optimization: Slower but smoother export (recommended).
+
+📦 Tech Stack
+Pure HTML5, CSS3, and Vanilla JavaScript
+
+MediaRecorder API for video export
+
+Web Speech API for captions
+
+Canvas + AudioContext for audio processing
+
+⚠️ Notes
+Social media videos (YouTube, TikTok) will not work via URL upload – use file upload instead.
+
+Best results: Use MP4, keep clips under 5 minutes, and enable all optimizations.
+
+Browser support: Works best in Chrome, Edge, and other Chromium-based browsers.
+
+🧠 Why It Doesn’t Freeze
+Frame throttling prevents UI lock.
+
+Small recording chunks (250ms) avoid memory bloat.
+
+Hardware acceleration and buffering reduce CPU load.
+
+Audio processing is done in a separate AudioContext.
+
+Made with performance in mind. No server needed – everything runs in your browser.
+
