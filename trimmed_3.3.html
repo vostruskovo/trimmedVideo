@@ -1000,6 +1000,11 @@ let exportTimeout = null;
 let exports = [];
 let nextExportId = 1;
 
+// Duration detection state
+let isDurationDetectionActive = false;
+let durationDetectionAttempts = 0;
+const MAX_DURATION_DETECTION_ATTEMPTS = 5;
+
 // Check if lamejs is available
 let lamejsAvailable = false;
 try {
@@ -1278,28 +1283,279 @@ function audioBufferToWav(buffer, volume = 1.0) {
     return wavBlob;
 }
 
-// Function to check and fix video duration
-function checkAndFixDuration() {
-    if (!totalDuration || totalDuration <= 0) {
-        // Try multiple methods to get duration
-        if (player.duration && player.duration > 0) {
-            totalDuration = player.duration;
-        } else if (player.seekable && player.seekable.length > 0) {
-            totalDuration = player.seekable.end(player.seekable.length - 1);
-        } else if (player.buffered && player.buffered.length > 0) {
-            totalDuration = player.buffered.end(player.buffered.length - 1);
+// IMPROVED: Enhanced duration detection with multiple fallback methods
+function getVideoDurationWithFallback(videoElement) {
+    let duration = 0;
+    
+    // Method 1: Direct duration property
+    if (videoElement.duration && videoElement.duration > 0 && videoElement.duration !== Infinity) {
+        duration = videoElement.duration;
+        console.log('Duration from video.duration:', duration);
+        return duration;
+    }
+    
+    // Method 2: Seekable end
+    if (videoElement.seekable && videoElement.seekable.length > 0) {
+        const seekableEnd = videoElement.seekable.end(videoElement.seekable.length - 1);
+        if (seekableEnd && seekableEnd > 0) {
+            duration = seekableEnd;
+            console.log('Duration from video.seekable.end:', duration);
+            return duration;
+        }
+    }
+    
+    // Method 3: Buffered end
+    if (videoElement.buffered && videoElement.buffered.length > 0) {
+        const bufferedEnd = videoElement.buffered.end(videoElement.buffered.length - 1);
+        if (bufferedEnd && bufferedEnd > 0) {
+            duration = bufferedEnd;
+            console.log('Duration from video.buffered.end:', duration);
+            return duration;
+        }
+    }
+    
+    // Method 4: Try to get duration via video tracks
+    if (videoElement.videoTracks && videoElement.videoTracks.length > 0) {
+        const track = videoElement.videoTracks[0];
+        if (track && track.length && track.length > 0) {
+            duration = track.length;
+            console.log('Duration from videoTracks[0].length:', duration);
+            return duration;
+        }
+    }
+    
+    // Method 5: Try to seek to end and get time
+    // This is a more aggressive method for problematic videos
+    return new Promise((resolve) => {
+        const tempVideo = videoElement.cloneNode();
+        tempVideo.currentTime = Number.MAX_SAFE_INTEGER;
+        
+        tempVideo.onseeked = () => {
+            if (tempVideo.duration && tempVideo.duration > 0 && tempVideo.duration !== Infinity) {
+                duration = tempVideo.duration;
+                console.log('Duration from seek to end:', duration);
+            }
+            resolve(duration);
+        };
+        
+        tempVideo.onerror = () => {
+            console.warn('Failed to get duration via seeking');
+            resolve(duration);
+        };
+        
+        // Timeout for seeking
+        setTimeout(() => {
+            if (tempVideo.duration && tempVideo.duration > 0) {
+                duration = tempVideo.duration;
+                console.log('Duration after timeout:', duration);
+            }
+            resolve(duration);
+        }, 2000);
+    });
+}
+
+// NEW: Advanced duration detection with multiple attempts
+async function detectVideoDuration(videoElement) {
+    if (isDurationDetectionActive) return totalDuration;
+    
+    isDurationDetectionActive = true;
+    durationDetectionAttempts = 0;
+    
+    // Try multiple methods in sequence
+    const detectionMethods = [
+        // Method 1: Direct property
+        () => {
+            if (videoElement.duration && videoElement.duration > 0 && videoElement.duration !== Infinity) {
+                return videoElement.duration;
+            }
+            return 0;
+        },
+        
+        // Method 2: Wait a bit and try again (some videos load metadata slowly)
+        () => {
+            return new Promise(resolve => {
+                setTimeout(() => {
+                    if (videoElement.duration && videoElement.duration > 0 && videoElement.duration !== Infinity) {
+                        resolve(videoElement.duration);
+                    } else {
+                        resolve(0);
+                    }
+                }, 500);
+            });
+        },
+        
+        // Method 3: Check seekable ranges
+        () => {
+            if (videoElement.seekable && videoElement.seekable.length > 0) {
+                const seekableEnd = videoElement.seekable.end(videoElement.seekable.length - 1);
+                if (seekableEnd && seekableEnd > 0) {
+                    return seekableEnd;
+                }
+            }
+            return 0;
+        },
+        
+        // Method 4: Check buffered ranges
+        () => {
+            if (videoElement.buffered && videoElement.buffered.length > 0) {
+                const bufferedEnd = videoElement.buffered.end(videoElement.buffered.length - 1);
+                if (bufferedEnd && bufferedEnd > 0) {
+                    return bufferedEnd;
+                }
+            }
+            return 0;
+        },
+        
+        // Method 5: Try to play and seek
+        () => {
+            return new Promise(resolve => {
+                const wasPlaying = !videoElement.paused;
+                const wasMuted = videoElement.muted;
+                const currentTime = videoElement.currentTime;
+                
+                // Save current state
+                videoElement.muted = true;
+                
+                // Try to seek near the end
+                videoElement.currentTime = 3600; // 1 hour
+                
+                const onSeeked = () => {
+                    videoElement.removeEventListener('seeked', onSeeked);
+                    videoElement.removeEventListener('error', onError);
+                    
+                    // Try to get duration after seeking
+                    setTimeout(() => {
+                        let detectedDuration = 0;
+                        
+                        if (videoElement.duration && videoElement.duration > 0 && videoElement.duration !== Infinity) {
+                            detectedDuration = videoElement.duration;
+                        } else if (videoElement.seekable && videoElement.seekable.length > 0) {
+                            detectedDuration = videoElement.seekable.end(videoElement.seekable.length - 1);
+                        }
+                        
+                        // Restore original state
+                        videoElement.currentTime = currentTime;
+                        videoElement.muted = wasMuted;
+                        if (!wasPlaying) {
+                            videoElement.pause();
+                        }
+                        
+                        resolve(detectedDuration);
+                    }, 100);
+                };
+                
+                const onError = () => {
+                    videoElement.removeEventListener('seeked', onSeeked);
+                    videoElement.removeEventListener('error', onError);
+                    
+                    // Restore original state
+                    videoElement.currentTime = currentTime;
+                    videoElement.muted = wasMuted;
+                    if (!wasPlaying) {
+                        videoElement.pause();
+                    }
+                    
+                    resolve(0);
+                };
+                
+                videoElement.addEventListener('seeked', onSeeked);
+                videoElement.addEventListener('error', onError);
+                
+                // Timeout
+                setTimeout(() => {
+                    videoElement.removeEventListener('seeked', onSeeked);
+                    videoElement.removeEventListener('error', onError);
+                    
+                    // Restore original state
+                    videoElement.currentTime = currentTime;
+                    videoElement.muted = wasMuted;
+                    if (!wasPlaying) {
+                        videoElement.pause();
+                    }
+                    
+                    resolve(0);
+                }, 3000);
+            });
+        }
+    ];
+    
+    // Try each method until we get a valid duration
+    for (let i = 0; i < detectionMethods.length; i++) {
+        durationDetectionAttempts++;
+        
+        try {
+            const method = detectionMethods[i];
+            let result;
+            
+            if (typeof method === 'function') {
+                result = method();
+                
+                // Handle promises
+                if (result && typeof result.then === 'function') {
+                    result = await result;
+                }
+                
+                if (result && result > 0) {
+                    totalDuration = result;
+                    console.log(`Duration detected via method ${i + 1}: ${formatTime(result)}`);
+                    isDurationDetectionActive = false;
+                    return result;
+                }
+            }
+        } catch (error) {
+            console.warn(`Duration detection method ${i + 1} failed:`, error);
         }
         
-        // If we found a duration, update controls
-        if (totalDuration > 0) {
-            initializeDurationControls();
-            status.textContent = `Video loaded: ${formatTime(totalDuration)}`;
+        // Wait a bit between attempts
+        if (i < detectionMethods.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 300));
         }
+    }
+    
+    // Last resort: If we can't detect duration, estimate based on file size
+    if (currentFile && currentFile.size > 0 && totalDuration <= 0) {
+        // Rough estimation: 1MB ≈ 5-10 seconds of video (varies by quality)
+        // This is a very rough estimate but better than 0
+        const estimatedDuration = Math.min((currentFile.size / (1024 * 1024)) * 7, 3600); // Max 1 hour
+        totalDuration = estimatedDuration;
+        console.log(`Estimated duration from file size: ${formatTime(estimatedDuration)}`);
+        status.textContent = `⚠️ Duration estimated: ${formatTime(estimatedDuration)} (metadata incomplete)`;
+    }
+    
+    isDurationDetectionActive = false;
+    return totalDuration;
+}
+
+// NEW: Force duration detection for problematic videos
+async function forceDurationDetection() {
+    if (isDurationDetectionActive) return;
+    
+    status.textContent = 'Detecting video duration...';
+    console.log('Starting forced duration detection');
+    
+    const detectedDuration = await detectVideoDuration(player);
+    
+    if (detectedDuration > 0) {
+        totalDuration = detectedDuration;
+        initializeDurationControls();
+        status.textContent = `Video loaded: ${formatTime(totalDuration)}`;
+        updateAudioStatus(`Ready`, 'ready');
+    } else {
+        // If still no duration, use a default
+        totalDuration = 300; // Default to 5 minutes
+        initializeDurationControls();
+        status.textContent = '⚠️ Using default duration (5 min). Manual time entry recommended.';
+        updateAudioStatus(`Duration estimated`, 'warning');
     }
 }
 
 // Function to initialize duration controls
 function initializeDurationControls() {
+    if (totalDuration <= 0) {
+        console.warn('Cannot initialize controls with duration <= 0');
+        return;
+    }
+    
     // Set up range controls
     startRange.min = 0;
     startRange.max = totalDuration;
@@ -1937,41 +2193,81 @@ updateAudioStatus(`Ready`, 'ready');
 hideError();
 });
 
-// Optimized video event handlers with fixed duration detection
-let metadataLoaded = false;
+// IMPROVED: Video event handlers with robust duration detection
 player.addEventListener('loadedmetadata', () => {
-    metadataLoaded = true;
-    totalDuration = player.duration;
+    console.log('loadedmetadata event fired');
     
-    // Fix: Some videos might report 0 or Infinity duration
-    if (!totalDuration || totalDuration === Infinity || totalDuration < 0) {
-        // Try to get duration through a different method
-        totalDuration = player.seekable && player.seekable.length > 0 
-            ? player.seekable.end(player.seekable.length - 1) 
-            : 0;
-        
-        if (!totalDuration) {
-            // Last resort: Wait and check again
-            setTimeout(() => {
-                totalDuration = player.duration || 
-                              (player.seekable && player.seekable.length > 0 
-                               ? player.seekable.end(player.seekable.length - 1) 
-                               : 0);
-                if (totalDuration > 0) {
-                    initializeDurationControls();
-                }
-            }, 1000);
-            return;
-        }
+    // Try to get duration immediately
+    if (player.duration && player.duration > 0 && player.duration !== Infinity) {
+        totalDuration = player.duration;
+        console.log('Duration from loadedmetadata:', totalDuration);
+        initializeDurationControls();
+        status.textContent = `Video loaded: ${formatTime(totalDuration)}`;
+        return;
     }
     
-    initializeDurationControls();
+    // If duration is problematic, start advanced detection
+    console.log('Duration not available in loadedmetadata, starting detection...');
+    setTimeout(() => {
+        forceDurationDetection();
+    }, 500);
 });
 
-// Add duration fallback check
 player.addEventListener('loadeddata', () => {
-    setTimeout(checkAndFixDuration, 500);
-    setTimeout(checkAndFixDuration, 2000); // Try again after 2 seconds
+    console.log('loadeddata event fired');
+    
+    // Try another detection after loadeddata
+    setTimeout(() => {
+        if (!totalDuration || totalDuration <= 0) {
+            forceDurationDetection();
+        }
+    }, 1000);
+});
+
+// Add progress event for better duration detection
+player.addEventListener('progress', () => {
+    // Check if we can get duration from buffered ranges
+    if ((!totalDuration || totalDuration <= 0) && player.buffered && player.buffered.length > 0) {
+        const bufferedEnd = player.buffered.end(player.buffered.length - 1);
+        if (bufferedEnd && bufferedEnd > 0) {
+            totalDuration = bufferedEnd;
+            console.log('Duration detected from progress event:', totalDuration);
+            initializeDurationControls();
+        }
+    }
+});
+
+// Add canplay event as another fallback
+player.addEventListener('canplay', () => {
+    if ((!totalDuration || totalDuration <= 0) && player.duration && player.duration > 0) {
+        totalDuration = player.duration;
+        console.log('Duration detected from canplay event:', totalDuration);
+        initializeDurationControls();
+    }
+});
+
+// Add timeupdate event for final fallback
+let lastDurationCheck = 0;
+player.addEventListener('timeupdate', () => {
+    // Check duration every 5 seconds as a final fallback
+    const now = Date.now();
+    if (now - lastDurationCheck > 5000 && (!totalDuration || totalDuration <= 0)) {
+        lastDurationCheck = now;
+        
+        // Try all available methods
+        if (player.duration && player.duration > 0) {
+            totalDuration = player.duration;
+        } else if (player.seekable && player.seekable.length > 0) {
+            totalDuration = player.seekable.end(player.seekable.length - 1);
+        } else if (player.buffered && player.buffered.length > 0) {
+            totalDuration = player.buffered.end(player.buffered.length - 1);
+        }
+        
+        if (totalDuration > 0) {
+            console.log('Duration detected from timeupdate event:', totalDuration);
+            initializeDurationControls();
+        }
+    }
 });
 
 player.addEventListener('play', () => {
@@ -2374,6 +2670,12 @@ showError('Load a video first.');
 return;
 }
 
+// Ensure we have a valid duration
+if (!totalDuration || totalDuration <= 0) {
+    showError('Cannot detect video duration. Please try loading the video again or use manual time entry.');
+    return;
+}
+
 // Determine segment times
 const s = segmentEnabled && !useFullVideo ? parseFloat(startRange.value) : 0;
 const e = segmentEnabled && !useFullVideo ? parseFloat(endRange.value) : totalDuration;
@@ -2421,6 +2723,12 @@ return;
 if(!player.src) {
 showError('Load a video first.');
 return;
+}
+
+// Ensure we have a valid duration
+if (!totalDuration || totalDuration <= 0) {
+    showError('Cannot detect video duration. Please try loading the video again or use manual time entry.');
+    return;
 }
 
 // Determine segment times
@@ -2721,6 +3029,9 @@ setTimeout(resolveSeek, 200);
 
 // Start playback
 await processingVideo.play();
+// ADDED: Sync delay to ensure smooth audio-video sync
+await new Promise(resolve => setTimeout(resolve, 100));
+
 let isExportingActive = true;
 let startTime = Date.now();
 
@@ -2780,7 +3091,7 @@ exportTimeout = null;
 cleanupTemporaryElements();
 }
 
-// FIXED: Optimized canvas export that respects user's format selection
+// FIXED: Optimized canvas export with fixed frame rate to prevent freezing
 async function optimizedCanvasExport(s, e, exportLength) {
 return new Promise(async (resolve, reject) => {
 try {
@@ -2790,6 +3101,8 @@ processingVideo.src = player.src;
 processingVideo.muted = false;
 processingVideo.crossOrigin = 'anonymous';
 processingVideo.style.display = 'none';
+processingVideo.preload = 'auto';
+processingVideo.playsInline = true;
 document.body.appendChild(processingVideo);
 
 // Wait for video to load
@@ -2838,7 +3151,7 @@ gainNode.connect(audioContext.destination);
 const userFormat = selectedFormat;
 const quality = qualitySelect.value;
 
-// FIXED: Get supported mime type that respects user selection
+// Get supported mime type that respects user selection
 const formatInfo = getSupportedMimeType(userFormat, quality);
 const actualFormat = formatInfo.format; // This will be the actual format used
 const mimeType = formatInfo.mimeType;
@@ -2861,8 +3174,8 @@ const bitrates = {
 };
 const bitrate = bitrates[quality] || bitrates.medium;
 
-// Adjust FPS for long videos
-const fps = exportLength > 300 ? 24 : 25; // Lower FPS for very long videos
+// FIXED: Use fixed frame rate for consistent playback
+const fps = 25; // Always use 25 FPS for consistent results
 
 // Capture streams
 const canvasStream = canvas.captureStream(fps);
@@ -2978,47 +3291,62 @@ processingVideo.onseeked = resolveSeek;
 setTimeout(resolveSeek, 200);
 });
 
+// Wait for video to be ready
+await new Promise(resolve => {
+const checkReady = () => {
+if (processingVideo.readyState >= 2) { // HAVE_CURRENT_DATA
+resolve();
+} else {
+setTimeout(checkReady, 50);
+}
+};
+checkReady();
+});
+
 // Start playback
 await processingVideo.play();
+// ADDED: Sync delay to ensure smooth audio-video sync
+await new Promise(resolve => setTimeout(resolve, 100));
 
-// Optimized rendering with adaptive frame rate
-let lastFrameTime = 0;
+// FIXED: Fixed frame rate rendering to prevent freezing
+let frameCount = 0;
 let startTime = Date.now();
 let isExportingActive = true;
-let frameCount = 0;
-
-// Adaptive frame interval for long videos
-const adaptiveFrameInterval = exportLength > 600 ? 1000 / 20 : 1000 / 25; // 20 FPS for very long videos
+const frameInterval = 1000 / fps; // Fixed interval based on FPS
+let lastFrameTime = startTime;
 
 function renderFrame() {
 if (!isExportingActive) return;
-const currentTime = Date.now();
-const elapsed = currentTime - lastFrameTime;
 
-// Adaptive frame rate rendering
-if (elapsed >= adaptiveFrameInterval) {
+const now = Date.now();
+const elapsed = now - lastFrameTime;
+const expectedFrames = Math.floor(elapsed / frameInterval);
+
+if (expectedFrames > 0) {
 // Draw frame
 ctx.drawImage(processingVideo, 0, 0, canvas.width, canvas.height);
-frameCount++;
+frameCount += expectedFrames;
+lastFrameTime = now - (elapsed % frameInterval);
 
-// Update progress less frequently for long videos to reduce CPU usage
-if (frameCount % (exportLength > 300 ? 10 : 5) === 0) {
+// Update progress every 0.5 seconds
+if (frameCount % Math.floor(fps / 2) === 0) {
 const videoTime = processingVideo.currentTime;
 const progress = (videoTime - s) / exportLength;
 progressEl.value = progress;
 exportProgressPercent.textContent = `${(progress * 100).toFixed(1)}%`;
 exportProgressTime.textContent = `${formatTime(videoTime - s)} / ${formatTime(exportLength)}`;
 }
-lastFrameTime = currentTime - (elapsed % adaptiveFrameInterval);
+}
 
 // Check if finished
-if (processingVideo.currentTime >= e || processingVideo.ended) {
+const videoTime = processingVideo.currentTime;
+if (videoTime >= e - 0.05 || processingVideo.ended) {
 isExportingActive = false;
 processingVideo.pause();
 recorder.stop();
 return;
 }
-}
+
 requestAnimationFrame(renderFrame);
 }
 
@@ -3143,8 +3471,41 @@ cleanupOldExports(exportId);
 status.textContent = `Downloading ${exportData.filename}...`;
 }
 
+// NEW: Manual duration override button
+function addDurationOverrideButton() {
+    const durationOverrideBtn = document.createElement('button');
+    durationOverrideBtn.className = 'jump-btn';
+    durationOverrideBtn.style.marginTop = '8px';
+    durationOverrideBtn.style.width = '100%';
+    durationOverrideBtn.textContent = '⚠️ Set Manual Duration';
+    
+    durationOverrideBtn.addEventListener('click', () => {
+        const currentDuration = totalDuration || 0;
+        const userInput = prompt(`Current detected duration: ${formatTime(currentDuration)}\n\nEnter manual duration (e.g., 1:30, 90, or 1:30:00):`, formatTime(currentDuration));
+        
+        if (userInput !== null) {
+            const parsedDuration = parseTimeInput(userInput);
+            if (parsedDuration > 0) {
+                totalDuration = parsedDuration;
+                initializeDurationControls();
+                status.textContent = `Manual duration set: ${formatTime(totalDuration)}`;
+                console.log('Manual duration override:', totalDuration);
+            } else {
+                showError('Invalid duration format. Use seconds (90) or time (1:30)');
+            }
+        }
+    });
+    
+    // Add to controls container
+    const controlsContainer = document.querySelector('.controls-container');
+    if (controlsContainer) {
+        controlsContainer.appendChild(durationOverrideBtn);
+    }
+}
+
 // Initialize the app
 initializeApp();
+addDurationOverrideButton();
 
 // Cleanup on page unload
 window.addEventListener('beforeunload', () => {
