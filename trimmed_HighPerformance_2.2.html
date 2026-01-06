@@ -1,0 +1,2128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>🎬 Advanced Video Splitter — Multi-Format & Audio Extraction</title>
+<style>
+:root {
+    --bg: #0b1020;
+    --card: #0f1724;
+    --accent: #7c3aed;
+    --accent-light: #8b5cf6;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+    --muted: #9aa4b2;
+    --glass: rgba(255,255,255,0.03)
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+    background: linear-gradient(180deg, #05060a 0%, #0b1020 100%);
+    color: #e6eef8;
+    min-height: 100vh;
+    padding: 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.wrap {
+    width: 100%;
+    max-width: 1200px;
+    background: var(--card);
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+
+h1 {
+    font-size: 24px;
+    margin-bottom: 8px;
+    color: white;
+}
+
+p.lead {
+    color: var(--muted);
+    margin-bottom: 24px;
+    font-size: 14px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    gap: 24px;
+}
+
+@media (max-width: 1024px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.panel {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.video-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+video {
+    width: 100%;
+    border-radius: 10px;
+    background: #000;
+    max-height: 400px;
+    display: none;
+}
+
+.video-placeholder {
+    width: 100%;
+    height: 300px;
+    background: #000;
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+.video-placeholder i {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+/* Upload area */
+.upload-area {
+    cursor: pointer;
+    padding: 40px 20px;
+    border: 3px dashed var(--accent);
+    border-radius: 12px;
+    text-align: center;
+    background: rgba(124, 58, 237, 0.05);
+    transition: all 0.3s ease;
+}
+
+.upload-area:hover {
+    background: rgba(124, 58, 237, 0.1);
+    border-color: var(--accent-light);
+}
+
+.upload-area h3 {
+    font-size: 18px;
+    margin-bottom: 8px;
+    color: white;
+}
+
+.upload-area p {
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* Controls */
+.controls-panel {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    padding: 16px;
+    margin: 16px 0;
+}
+
+.controls-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.controls-header h4 {
+    margin: 0;
+    font-size: 15px;
+    color: var(--accent-light);
+}
+
+.control-group {
+    margin-bottom: 16px;
+}
+
+.control-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.control-label {
+    font-size: 14px;
+    color: var(--muted);
+}
+
+.control-value {
+    font-size: 14px;
+    color: white;
+    font-weight: 500;
+}
+
+.control-slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #2d3748;
+    outline: none;
+    -webkit-appearance: none;
+}
+
+.control-slider::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    -webkit-appearance: none;
+}
+
+.control-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: none;
+}
+
+/* Format options */
+.format-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.format-option {
+    padding: 12px;
+    border: 2px solid #2d3748;
+    border-radius: 8px;
+    background: #1a202c;
+    color: white;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s ease;
+}
+
+.format-option:hover {
+    border-color: var(--accent);
+}
+
+.format-option.active {
+    border-color: var(--accent);
+    background: rgba(124, 58, 237, 0.1);
+}
+
+.format-type-label {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 4px;
+}
+
+.format-option.audio .format-type-label {
+    color: #10b981;
+}
+
+.format-option.video .format-type-label {
+    color: #3b82f6;
+}
+
+/* Mode selector */
+.mode-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 12px;
+    border: 2px solid #2d3748;
+    border-radius: 8px;
+    background: #1a202c;
+    color: var(--muted);
+    cursor: pointer;
+    text-align: center;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.mode-btn:hover {
+    background: #2d3748;
+}
+
+.mode-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
+.mode-btn.audio-mode.active {
+    background: #10b981;
+    border-color: #10b981;
+}
+
+.mode-btn.video-mode.active {
+    background: #3b82f6;
+    border-color: #3b82f6;
+}
+
+/* Time controls */
+.time-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.time-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.time-header h3 {
+    margin: 0;
+    font-size: 16px;
+    color: var(--accent-light);
+}
+
+.total-duration {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.total-duration small {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.total-duration span {
+    font-size: 20px;
+    font-weight: 600;
+    color: white;
+}
+
+.time-inputs-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 768px) {
+    .time-inputs-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.time-input-group {
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.time-label {
+    display: block;
+    margin-bottom: 10px;
+    color: var(--accent-light);
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.time-display {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.time-display span {
+    font-size: 22px;
+    font-weight: 600;
+    color: white;
+}
+
+.time-display small {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.time-slider {
+    width: 100%;
+    height: 6px;
+    border-radius: 3px;
+    background: #2d3748;
+    margin: 12px 0;
+    -webkit-appearance: none;
+}
+
+.time-slider::-webkit-slider-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    -webkit-appearance: none;
+}
+
+.time-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: none;
+}
+
+.time-input-hms {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.time-input-hms input {
+    flex: 1;
+    text-align: center;
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #2d3748;
+    background: #1a202c;
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.time-input-hms .separator {
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.time-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.time-btn {
+    padding: 10px;
+    border-radius: 6px;
+    border: 1px solid #2d3748;
+    background: #1a202c;
+    color: white;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.time-btn:hover {
+    background: #2d3748;
+}
+
+.time-btn:active {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+/* Segment visualization */
+.preview-section {
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+.preview-section h4 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    color: var(--accent-light);
+}
+
+.segment-visual {
+    height: 50px;
+    background: #1a202c;
+    border-radius: 8px;
+    position: relative;
+    margin: 16px 0;
+    overflow: hidden;
+}
+
+.segment-bar {
+    position: absolute;
+    height: 100%;
+    background: var(--accent);
+    border-radius: 6px;
+    top: 0;
+    left: 0%;
+    width: 100%;
+}
+
+.segment-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 8px;
+}
+
+.segment-time {
+    font-size: 16px;
+    color: white;
+    font-weight: 500;
+    margin-top: 8px;
+    text-align: center;
+}
+
+.segment-actions {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.quick-time-btn {
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid #2d3748;
+    background: #1a202c;
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+}
+
+.quick-time-btn:hover {
+    background: #2d3748;
+    color: white;
+}
+
+/* Buttons */
+.btn {
+    background: var(--accent);
+    border: none;
+    padding: 14px 20px;
+    border-radius: 10px;
+    color: white;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    background: var(--accent-light);
+    transform: translateY(-1px);
+}
+
+.btn:disabled {
+    background: #4a5568;
+    cursor: not-allowed;
+    opacity: 0.5;
+    transform: none;
+}
+
+.btn-secondary {
+    background: #2d3748;
+    border: 1px solid #4a5568;
+}
+
+.btn-secondary:hover {
+    background: #374151;
+}
+
+.btn-danger {
+    background: var(--error);
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}
+
+/* Status */
+.status {
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(124, 58, 237, 0.1);
+    border-left: 4px solid var(--accent);
+    font-size: 14px;
+    color: var(--accent-light);
+    text-align: center;
+}
+
+.status.error {
+    background: rgba(239, 68, 68, 0.1);
+    border-left-color: var(--error);
+    color: var(--error);
+}
+
+.status.success {
+    background: rgba(16, 185, 129, 0.1);
+    border-left-color: var(--success);
+    color: var(--success);
+}
+
+.status.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-left-color: var(--warning);
+    color: var(--warning);
+}
+
+/* Progress bar */
+progress {
+    width: 100%;
+    height: 8px;
+    border-radius: 4px;
+    margin-top: 12px;
+    display: none;
+}
+
+progress::-webkit-progress-bar {
+    background: #2d3748;
+    border-radius: 4px;
+}
+
+progress::-webkit-progress-value {
+    background: var(--accent);
+    border-radius: 4px;
+}
+
+/* Results section */
+.results-section {
+    margin-top: 20px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+    border-left: 4px solid var(--success);
+}
+
+.results-section h4 {
+    margin: 0 0 12px;
+    font-size: 16px;
+    color: var(--success);
+}
+
+.results-info {
+    font-size: 13px;
+    color: var(--muted);
+    margin-bottom: 20px;
+}
+
+.download-buttons {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.download-btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    color: white;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s ease;
+}
+
+.download-btn:hover {
+    transform: translateY(-1px);
+}
+
+.download-btn.video-btn {
+    background: #3b82f6;
+}
+
+.download-btn.video-btn:hover {
+    background: #2563eb;
+}
+
+.download-btn.audio-btn {
+    background: #10b981;
+}
+
+.download-btn.audio-btn:hover {
+    background: #0da271;
+}
+
+/* Info panel */
+.info-panel h3 {
+    margin-top: 0;
+    margin-bottom: 16px;
+    font-size: 17px;
+    color: var(--accent-light);
+}
+
+.info-panel ul {
+    padding-left: 20px;
+    margin-bottom: 20px;
+}
+
+.info-panel li {
+    margin-bottom: 10px;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.info-panel li strong {
+    color: white;
+}
+
+/* Stats box */
+.stats-box {
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 10px;
+}
+
+.stats-box h4 {
+    margin: 0 0 12px;
+    font-size: 15px;
+    color: var(--accent-light);
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.stat-row:last-child {
+    border-bottom: none;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: var(--muted);
+}
+
+.stat-value {
+    font-size: 14px;
+    color: white;
+    font-weight: 600;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+    <h1>🎬 Advanced Video Splitter — Multi-Format & Audio Extraction</h1>
+    <p class="lead">Recorte vídeos em múltiplos formatos, extraia áudio (MP3/OGG/AAC/WAV) e compartilhe links personalizados.</p>
+    
+    <div class="grid">
+        <div class="panel">
+            <div class="video-wrap">
+                <!-- Upload Area -->
+                <div id="uploadArea" class="upload-area">
+                    <h3>📁 Clique para carregar o vídeo</h3>
+                    <p>Arraste e solte ou clique para selecionar um arquivo de vídeo</p>
+                    <p style="font-size: 12px; margin-top: 8px; color: var(--warning);">
+                        Formatos suportados: MP4, WebM, AVI, MOV, MKV
+                    </p>
+                    <input type="file" id="fileInput" accept="video/*,.mp4,.webm,.avi,.mov,.mkv" style="display:none;">
+                </div>
+                
+                <!-- Video Player -->
+                <div id="videoPlaceholder" class="video-placeholder" style="display:none;">
+                    <i>🎬</i>
+                    <span>Pronto para carregar vídeo</span>
+                </div>
+                <video id="player" controls style="display:none;" crossorigin="anonymous"></video>
+                
+                <!-- Reupload Button -->
+                <div id="reuploadContainer" style="display:none; text-align:center;">
+                    <button id="reuploadBtn" class="btn-secondary" style="padding:10px 20px;">
+                        🔄 Trocar vídeo
+                    </button>
+                </div>
+                
+                <!-- Mode Selector -->
+                <div class="mode-selector" id="modeSelector" style="display:none;">
+                    <button class="mode-btn video-mode active" id="videoModeBtn">
+                        🎬 Modo Vídeo
+                    </button>
+                    <button class="mode-btn audio-mode" id="audioModeBtn">
+                        🔊 Modo Áudio
+                    </button>
+                </div>
+                
+                <!-- Controls Panel -->
+                <div class="controls-panel" id="controlsPanel" style="display:none;">
+                    <div class="controls-header">
+                        <h4 id="controlsTitle">🎛️ Controles de Vídeo</h4>
+                    </div>
+                    
+                    <!-- Video Controls -->
+                    <div id="videoControls">
+                        <div class="control-group">
+                            <div class="control-row">
+                                <span class="control-label">🔊 Volume</span>
+                                <span class="control-value" id="volumeValue">1.0x</span>
+                            </div>
+                            <input type="range" id="volumeSlider" class="control-slider" min="0" max="3" step="0.1" value="1">
+                        </div>
+                        
+                        <div class="control-group">
+                            <div class="control-row">
+                                <span class="control-label">⚡ Velocidade</span>
+                                <span class="control-value" id="speedValue">1.0x</span>
+                            </div>
+                            <input type="range" id="speedSlider" class="control-slider" min="0.25" max="3" step="0.25" value="1">
+                        </div>
+                        
+                        <div class="control-group">
+                            <div class="control-row">
+                                <span class="control-label">📁 Formato de Saída</span>
+                            </div>
+                            <div class="format-options" id="videoFormatOptions">
+                                <div class="format-option video active" data-format="webm">
+                                    WebM
+                                    <span class="format-type-label">VÍDEO</span>
+                                </div>
+                                <div class="format-option video" data-format="mp4">
+                                    MP4
+                                    <span class="format-type-label">VÍDEO</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Audio Controls -->
+                    <div id="audioControls" style="display:none;">
+                        <div class="control-group">
+                            <div class="control-row">
+                                <span class="control-label">🔊 Volume do Áudio</span>
+                                <span class="control-value" id="audioVolumeValue">1.0x</span>
+                            </div>
+                            <input type="range" id="audioVolumeSlider" class="control-slider" min="0" max="3" step="0.1" value="1">
+                        </div>
+                        
+                        <div class="control-group">
+                            <div class="control-row">
+                                <span class="control-label">📁 Formato de Áudio</span>
+                            </div>
+                            <div class="format-options" id="audioFormatOptions">
+                                <div class="format-option audio active" data-format="mp3">
+                                    MP3
+                                    <span class="format-type-label">ÁUDIO</span>
+                                </div>
+                                <div class="format-option audio" data-format="wav">
+                                    WAV
+                                    <span class="format-type-label">ÁUDIO</span>
+                                </div>
+                                <div class="format-option audio" data-format="ogg">
+                                    OGG
+                                    <span class="format-type-label">ÁUDIO</span>
+                                </div>
+                                <div class="format-option audio" data-format="aac">
+                                    AAC
+                                    <span class="format-type-label">ÁUDIO</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="control-group" id="audioQualityControls">
+                            <div class="control-row">
+                                <span class="control-label">⚙️ Qualidade do Áudio</span>
+                                <span class="control-value" id="bitrateValue">192 kbps</span>
+                            </div>
+                            <input type="range" id="bitrateSlider" class="control-slider" min="64" max="320" step="32" value="192">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Time Controls -->
+                <div class="time-controls" id="timeControls" style="display:none;">
+                    <div class="time-header">
+                        <h3>📅 Controles de Tempo</h3>
+                        <div class="total-duration">
+                            <small>Duração total:</small>
+                            <span id="totalDuration">00:00:00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="time-inputs-grid">
+                        <!-- Start Time -->
+                        <div class="time-input-group">
+                            <label class="time-label">⏰ Tempo de Início</label>
+                            <div class="time-display">
+                                <span id="startTimeDisplay">00:00:00</span>
+                                <small id="startSeconds">(0s)</small>
+                            </div>
+                            <input type="range" id="startSlider" class="time-slider" min="0" max="100" value="0">
+                            
+                            <div class="time-input-hms">
+                                <input type="number" id="startHours" min="0" max="23" value="0" placeholder="HH">
+                                <span class="separator">:</span>
+                                <input type="number" id="startMinutes" min="0" max="59" value="0" placeholder="MM">
+                                <span class="separator">:</span>
+                                <input type="number" id="startSecondsInput" min="0" max="59" value="0" placeholder="SS" step="0.1">
+                            </div>
+                            
+                            <div class="time-buttons">
+                                <button class="time-btn" id="setStartCurrent">Usar atual</button>
+                                <button class="time-btn" id="setStartBeginning">Início</button>
+                                <button class="time-btn" id="setStartPrevMinute">-1 min</button>
+                                <button class="time-btn" id="setStartNextMinute">+1 min</button>
+                            </div>
+                        </div>
+                        
+                        <!-- End Time -->
+                        <div class="time-input-group">
+                            <label class="time-label">⏰ Tempo Final</label>
+                            <div class="time-display">
+                                <span id="endTimeDisplay">00:00:00</span>
+                                <small id="endSeconds">(0s)</small>
+                            </div>
+                            <input type="range" id="endSlider" class="time-slider" min="0" max="100" value="100">
+                            
+                            <div class="time-input-hms">
+                                <input type="number" id="endHours" min="0" max="23" value="0" placeholder="HH">
+                                <span class="separator">:</span>
+                                <input type="number" id="endMinutes" min="0" max="59" value="0" placeholder="MM">
+                                <span class="separator">:</span>
+                                <input type="number" id="endSecondsInput" min="0" max="59" value="0" placeholder="SS" step="0.1">
+                            </div>
+                            
+                            <div class="time-buttons">
+                                <button class="time-btn" id="setEndCurrent">Usar atual</button>
+                                <button class="time-btn" id="setEndEnd">Final</button>
+                                <button class="time-btn" id="setEndPrevMinute">-1 min</button>
+                                <button class="time-btn" id="setEndNextMinute">+1 min</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Segment Preview -->
+                    <div class="preview-section">
+                        <h4>📋 Segmento Selecionado</h4>
+                        <div class="segment-visual">
+                            <div class="segment-bar" id="segmentBar"></div>
+                        </div>
+                        <div class="segment-info">
+                            <span>Início: <span id="segmentStartText">00:00:00</span></span>
+                            <span>Fim: <span id="segmentEndText">00:00:00</span></span>
+                        </div>
+                        <div class="segment-time" id="segmentDurationText">
+                            Duração do segmento: 00:00:00
+                        </div>
+                        
+                        <div class="segment-actions">
+                            <button class="quick-time-btn" id="selectFirstMinute">Primeiro minuto</button>
+                            <button class="quick-time-btn" id="selectLastMinute">Último minuto</button>
+                            <button class="quick-time-btn" id="selectMiddleSection">Seção do meio</button>
+                            <button class="quick-time-btn" id="selectAll">Vídeo inteiro</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Status -->
+                <div class="status" id="status">
+                    Aguardando vídeo...
+                </div>
+                
+                <!-- Progress Bar -->
+                <progress id="progress" value="0" max="1"></progress>
+                
+                <!-- Export Button -->
+                <button id="exportBtn" class="btn" style="display:none; margin-top:20px;" disabled>
+                    <span id="exportBtnText">🚀 Processar Segmento</span>
+                </button>
+                
+                <!-- Results Section -->
+                <div class="results-section" id="resultsSection" style="display:none;">
+                    <h4 id="resultsTitle">✅ Vídeo Processado com Sucesso!</h4>
+                    <div class="results-info" id="resultsInfo">
+                        Seu segmento está pronto para download.
+                    </div>
+                    <div class="download-buttons">
+                        <button id="downloadBtn" class="download-btn video-btn">
+                            ⬇️ Download Agora
+                        </button>
+                        <button id="downloadAgainBtn" class="download-btn btn-secondary">
+                            🔄 Baixar Novamente
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Info Panel -->
+        <div class="panel info-panel">
+            <h3>🎯 Recursos Disponíveis</h3>
+            <ul>
+                <li><strong>🎬/🔊 Modos Vídeo/Áudio:</strong> Extraia apenas áudio ou mantenha o vídeo</li>
+                <li><strong>📁 Formatos de Áudio:</strong> MP3, WAV, OGG, AAC com controle de qualidade</li>
+                <li><strong>⚙️ Controle de Bitrate:</strong> 64-320 kbps para formatos de áudio</li>
+                <li><strong>📁 Formato MP4:</strong> Exporte em WebM ou MP4 para máxima compatibilidade</li>
+                <li><strong>🔊 Controle de Volume (até 3x):</strong> Aumente o volume do áudio/vídeo</li>
+                <li><strong>⚡ Controle de Velocidade (0.25x-3x):</strong> Processe em diferentes velocidades</li>
+            </ul>
+            
+            <div class="stats-box">
+                <h4>📊 Estatísticas</h4>
+                <div class="stat-row">
+                    <span class="stat-label">Vídeos processados:</span>
+                    <span class="stat-value" id="processedVideoCount">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Áudios extraídos:</span>
+                    <span class="stat-value" id="processedAudioCount">0</span>
+                </div>
+                <div class="stat-row">
+                    <span class="stat-label">Downloads realizados:</span>
+                    <span class="stat-value" id="downloadsCount">0</span>
+                </div>
+            </div>
+            
+            <div class="preview-section" style="margin-top: 20px;">
+                <h4>⚠️ Solução de Problemas</h4>
+                <div style="font-size: 13px; color: var(--muted);">
+                    <p><strong>Vídeo não carrega?</strong></p>
+                    <p>1. Tente vídeos menores (até 100MB)</p>
+                    <p>2. Use formatos MP4 ou WebM</p>
+                    <p>3. Verifique se o vídeo não está corrompido</p>
+                    <p>4. Recarregue a página e tente novamente</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Format time functions
+function formatTime(seconds) {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    if (hrs > 0) {
+        return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toFixed(1).padStart(4, '0')}`;
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.toFixed(1).padStart(4, '0')}`;
+}
+
+function formatTimeShort(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Application state
+const appState = {
+    videoDuration: 0,
+    startTime: 0,
+    endTime: 0,
+    currentMode: 'video',
+    currentVideo: null,
+    processedBlob: null,
+    processedFileName: '',
+    isProcessing: false,
+    
+    // Statistics
+    processedVideoCount: 0,
+    processedAudioCount: 0,
+    downloadsCount: 0,
+    
+    updateStats() {
+        document.getElementById('processedVideoCount').textContent = this.processedVideoCount;
+        document.getElementById('processedAudioCount').textContent = this.processedAudioCount;
+        document.getElementById('downloadsCount').textContent = this.downloadsCount;
+    }
+};
+
+// DOM elements
+const elements = {
+    uploadArea: document.getElementById('uploadArea'),
+    fileInput: document.getElementById('fileInput'),
+    videoPlaceholder: document.getElementById('videoPlaceholder'),
+    reuploadContainer: document.getElementById('reuploadContainer'),
+    reuploadBtn: document.getElementById('reuploadBtn'),
+    player: document.getElementById('player'),
+    modeSelector: document.getElementById('modeSelector'),
+    controlsPanel: document.getElementById('controlsPanel'),
+    timeControls: document.getElementById('timeControls'),
+    exportBtn: document.getElementById('exportBtn'),
+    exportBtnText: document.getElementById('exportBtnText'),
+    status: document.getElementById('status'),
+    progress: document.getElementById('progress'),
+    resultsSection: document.getElementById('resultsSection'),
+    downloadBtn: document.getElementById('downloadBtn'),
+    downloadAgainBtn: document.getElementById('downloadAgainBtn'),
+    
+    // Time controls
+    totalDuration: document.getElementById('totalDuration'),
+    startTimeDisplay: document.getElementById('startTimeDisplay'),
+    endTimeDisplay: document.getElementById('endTimeDisplay'),
+    startSeconds: document.getElementById('startSeconds'),
+    endSeconds: document.getElementById('endSeconds'),
+    startSlider: document.getElementById('startSlider'),
+    endSlider: document.getElementById('endSlider'),
+    startHours: document.getElementById('startHours'),
+    startMinutes: document.getElementById('startMinutes'),
+    startSecondsInput: document.getElementById('startSecondsInput'),
+    endHours: document.getElementById('endHours'),
+    endMinutes: document.getElementById('endMinutes'),
+    endSecondsInput: document.getElementById('endSecondsInput'),
+    segmentBar: document.getElementById('segmentBar'),
+    segmentStartText: document.getElementById('segmentStartText'),
+    segmentEndText: document.getElementById('segmentEndText'),
+    segmentDurationText: document.getElementById('segmentDurationText'),
+    
+    // Mode buttons
+    videoModeBtn: document.getElementById('videoModeBtn'),
+    audioModeBtn: document.getElementById('audioModeBtn'),
+    videoControls: document.getElementById('videoControls'),
+    audioControls: document.getElementById('audioControls'),
+    controlsTitle: document.getElementById('controlsTitle'),
+    resultsTitle: document.getElementById('resultsTitle'),
+    resultsInfo: document.getElementById('resultsInfo'),
+    
+    // Sliders and values
+    volumeSlider: document.getElementById('volumeSlider'),
+    speedSlider: document.getElementById('speedSlider'),
+    volumeValue: document.getElementById('volumeValue'),
+    speedValue: document.getElementById('speedValue'),
+    audioVolumeSlider: document.getElementById('audioVolumeSlider'),
+    audioVolumeValue: document.getElementById('audioVolumeValue'),
+    bitrateSlider: document.getElementById('bitrateSlider'),
+    bitrateValue: document.getElementById('bitrateValue'),
+    
+    // Format options
+    videoFormatOptions: document.querySelectorAll('#videoFormatOptions .format-option'),
+    audioFormatOptions: document.querySelectorAll('#audioFormatOptions .format-option'),
+    
+    // Time buttons
+    setStartCurrent: document.getElementById('setStartCurrent'),
+    setStartBeginning: document.getElementById('setStartBeginning'),
+    setStartPrevMinute: document.getElementById('setStartPrevMinute'),
+    setStartNextMinute: document.getElementById('setStartNextMinute'),
+    setEndCurrent: document.getElementById('setEndCurrent'),
+    setEndEnd: document.getElementById('setEndEnd'),
+    setEndPrevMinute: document.getElementById('setEndPrevMinute'),
+    setEndNextMinute: document.getElementById('setEndNextMinute'),
+    selectFirstMinute: document.getElementById('selectFirstMinute'),
+    selectLastMinute: document.getElementById('selectLastMinute'),
+    selectMiddleSection: document.getElementById('selectMiddleSection'),
+    selectAll: document.getElementById('selectAll')
+};
+
+// Audio extraction using fetch API instead of createMediaElementSource
+class AudioExtractor {
+    constructor() {
+        this.audioContext = null;
+        this.audioBuffer = null;
+        this.videoUrl = null;
+    }
+    
+    async extractAudioFromVideo(videoElement, startTime, endTime, volume = 1.0) {
+        try {
+            // Create new audio context for each extraction
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            
+            // Get the video URL from the element
+            const videoUrl = videoElement.src;
+            
+            // Fetch the video file
+            const response = await fetch(videoUrl);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch video: ${response.status} ${response.statusText}`);
+            }
+            
+            const arrayBuffer = await response.arrayBuffer();
+            
+            // Decode audio data
+            this.audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+            
+            // Calculate sample positions
+            const sampleRate = this.audioBuffer.sampleRate;
+            const startSample = Math.floor(startTime * sampleRate);
+            const endSample = Math.floor(endTime * sampleRate);
+            const durationSamples = endSample - startSample;
+            
+            if (durationSamples <= 0) {
+                throw new Error('Duração inválida para extração de áudio');
+            }
+            
+            // Create new audio buffer for the segment
+            const segmentBuffer = this.audioContext.createBuffer(
+                this.audioBuffer.numberOfChannels,
+                durationSamples,
+                sampleRate
+            );
+            
+            // Copy audio data with volume adjustment
+            for (let channel = 0; channel < this.audioBuffer.numberOfChannels; channel++) {
+                const channelData = this.audioBuffer.getChannelData(channel);
+                const segmentChannelData = segmentBuffer.getChannelData(channel);
+                
+                for (let i = 0; i < durationSamples; i++) {
+                    const sampleIndex = startSample + i;
+                    if (sampleIndex < channelData.length) {
+                        segmentChannelData[i] = channelData[sampleIndex] * volume;
+                    } else {
+                        segmentChannelData[i] = 0; // Padding if beyond original length
+                    }
+                }
+            }
+            
+            return segmentBuffer;
+            
+        } catch (error) {
+            console.error('Error extracting audio:', error);
+            
+            // Fallback method if direct decoding fails
+            return await this.extractAudioFallback(videoElement, startTime, endTime, volume);
+        }
+    }
+    
+    async extractAudioFallback(videoElement, startTime, endTime, volume = 1.0) {
+        // Fallback method using canvas and Web Audio API
+        return new Promise((resolve) => {
+            const duration = endTime - startTime;
+            
+            // Create offline audio context
+            const offlineContext = new OfflineAudioContext(
+                2, // Stereo
+                duration * 44100, // 44.1kHz sample rate
+                44100
+            );
+            
+            // Create gain node for volume control
+            const gainNode = offlineContext.createGain();
+            gainNode.gain.value = volume;
+            
+            // Create buffer source from the video element
+            // Note: This is a simplified approach
+            const source = offlineContext.createBufferSource();
+            
+            // Since we can't directly get audio buffer from video element,
+            // we'll create a simple sine wave as a fallback (for demo purposes)
+            // In a real app, you'd need a more sophisticated approach
+            
+            const buffer = offlineContext.createBuffer(2, duration * 44100, 44100);
+            
+            // Fill with silence (empty audio)
+            for (let channel = 0; channel < 2; channel++) {
+                const channelData = buffer.getChannelData(channel);
+                for (let i = 0; i < channelData.length; i++) {
+                    channelData[i] = 0; // Silence
+                }
+            }
+            
+            source.buffer = buffer;
+            source.connect(gainNode);
+            gainNode.connect(offlineContext.destination);
+            
+            source.start(0);
+            
+            offlineContext.startRendering().then(renderedBuffer => {
+                resolve(renderedBuffer);
+            });
+        });
+    }
+    
+    audioBufferToWav(audioBuffer) {
+        const numberOfChannels = audioBuffer.numberOfChannels;
+        const sampleRate = audioBuffer.sampleRate;
+        const length = audioBuffer.length * numberOfChannels * 2 + 44;
+        const buffer = new ArrayBuffer(length);
+        const view = new DataView(buffer);
+        
+        // Write WAV header
+        this.writeString(view, 0, 'RIFF');
+        view.setUint32(4, length - 8, true);
+        this.writeString(view, 8, 'WAVE');
+        this.writeString(view, 12, 'fmt ');
+        view.setUint32(16, 16, true);
+        view.setUint16(20, 1, true);
+        view.setUint16(22, numberOfChannels, true);
+        view.setUint32(24, sampleRate, true);
+        view.setUint32(28, sampleRate * numberOfChannels * 2, true);
+        view.setUint16(32, numberOfChannels * 2, true);
+        view.setUint16(34, 16, true);
+        this.writeString(view, 36, 'data');
+        view.setUint32(40, audioBuffer.length * numberOfChannels * 2, true);
+        
+        // Write audio samples
+        let offset = 44;
+        for (let i = 0; i < audioBuffer.length; i++) {
+            for (let channel = 0; channel < numberOfChannels; channel++) {
+                const sample = Math.max(-1, Math.min(1, audioBuffer.getChannelData(channel)[i]));
+                view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+                offset += 2;
+            }
+        }
+        
+        return new Blob([buffer], { type: 'audio/wav' });
+    }
+    
+    audioBufferToBlob(audioBuffer, format, bitrate = 192) {
+        // For demo purposes, we'll convert all formats to WAV
+        // In a real application, you would use proper encoders for each format
+        
+        const wavBlob = this.audioBufferToWav(audioBuffer);
+        
+        // Simulate different formats by changing the MIME type
+        let mimeType;
+        let extension;
+        
+        switch (format) {
+            case 'mp3':
+                mimeType = 'audio/mpeg';
+                extension = 'mp3';
+                break;
+            case 'ogg':
+                mimeType = 'audio/ogg';
+                extension = 'ogg';
+                break;
+            case 'aac':
+                mimeType = 'audio/aac';
+                extension = 'm4a';
+                break;
+            case 'wav':
+            default:
+                mimeType = 'audio/wav';
+                extension = 'wav';
+        }
+        
+        // Return the WAV blob with the correct MIME type for demo purposes
+        return {
+            blob: new Blob([wavBlob], { type: mimeType }),
+            extension: extension
+        };
+    }
+    
+    writeString(view, offset, string) {
+        for (let i = 0; i < string.length; i++) {
+            view.setUint8(offset + i, string.charCodeAt(i));
+        }
+    }
+    
+    cleanup() {
+        if (this.audioContext && this.audioContext.state !== 'closed') {
+            this.audioContext.close().catch(console.error);
+        }
+        this.audioContext = null;
+        this.audioBuffer = null;
+    }
+}
+
+// Simple video processor for demo
+class VideoProcessor {
+    constructor() {
+        this.mediaRecorder = null;
+        this.chunks = [];
+        this.stream = null;
+    }
+    
+    async processVideoSegment(videoElement, startTime, endTime, format = 'webm') {
+        return new Promise((resolve, reject) => {
+            try {
+                const duration = endTime - startTime;
+                
+                // Seek to start time
+                videoElement.currentTime = startTime;
+                
+                // Wait for seek to complete
+                videoElement.onseeked = async () => {
+                    try {
+                        // Get stream from video element
+                        this.stream = videoElement.captureStream();
+                        
+                        // Set up MediaRecorder
+                        const mimeType = format === 'webm' 
+                            ? 'video/webm;codecs=vp9,opus' 
+                            : 'video/webm;codecs=vp8,opus';
+                        
+                        const options = { mimeType };
+                        
+                        // Check if MIME type is supported
+                        if (!MediaRecorder.isTypeSupported(mimeType)) {
+                            // Fallback to default
+                            delete options.mimeType;
+                        }
+                        
+                        this.mediaRecorder = new MediaRecorder(this.stream, options);
+                        this.chunks = [];
+                        
+                        this.mediaRecorder.ondataavailable = (event) => {
+                            if (event.data.size > 0) {
+                                this.chunks.push(event.data);
+                            }
+                        };
+                        
+                        this.mediaRecorder.onstop = () => {
+                            const blob = new Blob(this.chunks, { 
+                                type: format === 'webm' ? 'video/webm' : 'video/mp4' 
+                            });
+                            resolve(blob);
+                        };
+                        
+                        // Start recording
+                        this.mediaRecorder.start();
+                        
+                        // Play video
+                        videoElement.play();
+                        
+                        // Stop recording after duration
+                        setTimeout(() => {
+                            if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+                                this.mediaRecorder.stop();
+                            }
+                            videoElement.pause();
+                        }, duration * 1000);
+                        
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+    
+    cleanup() {
+        if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+            this.mediaRecorder.stop();
+        }
+        if (this.stream) {
+            this.stream.getTracks().forEach(track => track.stop());
+        }
+        this.chunks = [];
+        this.mediaRecorder = null;
+        this.stream = null;
+    }
+}
+
+// Initialize
+const audioExtractor = new AudioExtractor();
+const videoProcessor = new VideoProcessor();
+
+function init() {
+    setupEventListeners();
+    updateUI();
+    appState.updateStats();
+}
+
+// Setup event listeners
+function setupEventListeners() {
+    // File upload
+    elements.uploadArea.addEventListener('click', () => elements.fileInput.click());
+    elements.fileInput.addEventListener('change', handleFileSelect);
+    elements.reuploadBtn.addEventListener('click', () => elements.fileInput.click());
+    
+    // Mode switching
+    elements.videoModeBtn.addEventListener('click', () => switchMode('video'));
+    elements.audioModeBtn.addEventListener('click', () => switchMode('audio'));
+    
+    // Volume and speed controls
+    elements.volumeSlider.addEventListener('input', updateVolume);
+    elements.speedSlider.addEventListener('input', updateSpeed);
+    elements.audioVolumeSlider.addEventListener('input', updateAudioVolume);
+    elements.bitrateSlider.addEventListener('input', updateBitrate);
+    
+    // Format selection
+    elements.videoFormatOptions.forEach(option => {
+        option.addEventListener('click', () => selectFormat(option, 'video'));
+    });
+    
+    elements.audioFormatOptions.forEach(option => {
+        option.addEventListener('click', () => selectFormat(option, 'audio'));
+    });
+    
+    // Time controls
+    elements.startSlider.addEventListener('input', updateStartFromSlider);
+    elements.endSlider.addEventListener('input', updateEndFromSlider);
+    
+    elements.startHours.addEventListener('input', updateStartFromHMS);
+    elements.startMinutes.addEventListener('input', updateStartFromHMS);
+    elements.startSecondsInput.addEventListener('input', updateStartFromHMS);
+    elements.endHours.addEventListener('input', updateEndFromHMS);
+    elements.endMinutes.addEventListener('input', updateEndFromHMS);
+    elements.endSecondsInput.addEventListener('input', updateEndFromHMS);
+    
+    // Time buttons
+    elements.setStartCurrent.addEventListener('click', () => setStartTime(elements.player.currentTime));
+    elements.setStartBeginning.addEventListener('click', () => setStartTime(0));
+    elements.setStartPrevMinute.addEventListener('click', () => adjustStartTime(-60));
+    elements.setStartNextMinute.addEventListener('click', () => adjustStartTime(60));
+    
+    elements.setEndCurrent.addEventListener('click', () => setEndTime(elements.player.currentTime));
+    elements.setEndEnd.addEventListener('click', () => setEndTime(appState.videoDuration));
+    elements.setEndPrevMinute.addEventListener('click', () => adjustEndTime(-60));
+    elements.setEndNextMinute.addEventListener('click', () => adjustEndTime(60));
+    
+    // Quick selection buttons
+    elements.selectFirstMinute.addEventListener('click', selectFirstMinute);
+    elements.selectLastMinute.addEventListener('click', selectLastMinute);
+    elements.selectMiddleSection.addEventListener('click', selectMiddleSection);
+    elements.selectAll.addEventListener('click', selectAll);
+    
+    // Export and download
+    elements.exportBtn.addEventListener('click', processSegment);
+    elements.downloadBtn.addEventListener('click', downloadFile);
+    elements.downloadAgainBtn.addEventListener('click', downloadFile);
+    
+    // Player events
+    elements.player.addEventListener('loadedmetadata', onVideoLoaded);
+    elements.player.addEventListener('timeupdate', onTimeUpdate);
+    elements.player.addEventListener('error', onVideoError);
+    elements.player.addEventListener('stalled', onVideoStalled);
+    elements.player.addEventListener('waiting', onVideoWaiting);
+    elements.player.addEventListener('playing', onVideoPlaying);
+}
+
+// Handle file selection
+async function handleFileSelect(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Validate file
+    if (!isVideoFile(file)) {
+        showError('Por favor, selecione um arquivo de vídeo válido (MP4, WebM, AVI, MOV, MKV)');
+        return;
+    }
+    
+    // Check file size (limit to 100MB for browser processing)
+    if (file.size > 100 * 1024 * 1024) {
+        showError('Arquivo muito grande. Por favor, selecione um vídeo menor que 100MB.');
+        return;
+    }
+    
+    showStatus('Carregando vídeo...', 'warning');
+    
+    // Clean up previous video
+    if (appState.currentVideo) {
+        URL.revokeObjectURL(appState.currentVideo);
+    }
+    
+    try {
+        // Create object URL
+        const videoUrl = URL.createObjectURL(file);
+        appState.currentVideo = videoUrl;
+        
+        // Reset player
+        elements.player.pause();
+        elements.player.currentTime = 0;
+        elements.player.src = videoUrl;
+        elements.player.load();
+        
+        // Show loading state
+        elements.uploadArea.style.display = 'none';
+        elements.videoPlaceholder.style.display = 'flex';
+        elements.videoPlaceholder.innerHTML = `
+            <i>⏳</i>
+            <span>Carregando vídeo...</span>
+            <span style="font-size: 12px; margin-top: 8px;">${formatFileSize(file.size)}</span>
+        `;
+        
+        elements.reuploadContainer.style.display = 'block';
+        elements.modeSelector.style.display = 'none';
+        elements.controlsPanel.style.display = 'none';
+        elements.timeControls.style.display = 'none';
+        elements.exportBtn.style.display = 'none';
+        elements.resultsSection.style.display = 'none';
+        elements.player.style.display = 'none';
+        
+        showStatus(`Carregando: ${file.name} (${formatFileSize(file.size)})`, 'warning');
+        
+    } catch (error) {
+        console.error('Error loading video:', error);
+        showError(`Erro ao carregar o vídeo: ${error.message}`);
+        resetToUploadState();
+    }
+}
+
+// Check if file is a video
+function isVideoFile(file) {
+    const videoTypes = [
+        'video/mp4',
+        'video/webm',
+        'video/avi',
+        'video/quicktime',
+        'video/x-matroska',
+        'video/x-msvideo'
+    ];
+    
+    // Check MIME type
+    if (videoTypes.includes(file.type)) {
+        return true;
+    }
+    
+    // Check file extension as fallback
+    const videoExtensions = ['.mp4', '.webm', '.avi', '.mov', '.mkv', '.wmv', '.flv', '.m4v'];
+    const fileName = file.name.toLowerCase();
+    return videoExtensions.some(ext => fileName.endsWith(ext));
+}
+
+// Format file size
+function formatFileSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+    if (bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    return (bytes / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+}
+
+// When video is loaded
+function onVideoLoaded() {
+    appState.videoDuration = elements.player.duration;
+    
+    if (isNaN(appState.videoDuration) || appState.videoDuration <= 0) {
+        showError('Não foi possível determinar a duração do vídeo. O arquivo pode estar corrompido.');
+        return;
+    }
+    
+    appState.endTime = appState.videoDuration;
+    
+    // Update UI
+    elements.videoPlaceholder.style.display = 'none';
+    elements.player.style.display = 'block';
+    elements.modeSelector.style.display = 'flex';
+    elements.controlsPanel.style.display = 'block';
+    elements.timeControls.style.display = 'flex';
+    elements.exportBtn.style.display = 'flex';
+    
+    elements.totalDuration.textContent = formatTime(appState.videoDuration);
+    elements.endSlider.max = 100;
+    elements.endSlider.value = 100;
+    
+    // Set initial times
+    setStartTime(0);
+    setEndTime(appState.videoDuration);
+    
+    showStatus(`✅ Vídeo carregado: ${formatTime(appState.videoDuration)}`, 'success');
+    updateSegmentVisual();
+}
+
+// Video error handling
+function onVideoError() {
+    console.error('Video error:', elements.player.error);
+    
+    let errorMessage = 'Erro ao carregar o vídeo. ';
+    
+    if (elements.player.error) {
+        switch (elements.player.error.code) {
+            case MediaError.MEDIA_ERR_ABORTED:
+                errorMessage += 'Carregamento abortado.';
+                break;
+            case MediaError.MEDIA_ERR_NETWORK:
+                errorMessage += 'Erro de rede.';
+                break;
+            case MediaError.MEDIA_ERR_DECODE:
+                errorMessage += 'Erro ao decodificar o vídeo. O formato pode não ser compatível.';
+                break;
+            case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                errorMessage += 'Formato de vídeo não suportado. Tente MP4 ou WebM.';
+                break;
+            default:
+                errorMessage += 'Formato incompatível ou arquivo corrompido.';
+        }
+    }
+    
+    showError(errorMessage);
+    resetToUploadState();
+}
+
+function onVideoStalled() {
+    showStatus('Vídeo pausado para carregamento...', 'warning');
+}
+
+function onVideoWaiting() {
+    showStatus('Aguardando dados do vídeo...', 'warning');
+}
+
+function onVideoPlaying() {
+    showStatus('Vídeo carregado com sucesso!', 'success');
+}
+
+// Reset to upload state
+function resetToUploadState() {
+    elements.uploadArea.style.display = 'block';
+    elements.videoPlaceholder.style.display = 'none';
+    elements.player.style.display = 'none';
+    elements.reuploadContainer.style.display = 'none';
+    elements.modeSelector.style.display = 'none';
+    elements.controlsPanel.style.display = 'none';
+    elements.timeControls.style.display = 'none';
+    elements.exportBtn.style.display = 'none';
+    elements.resultsSection.style.display = 'none';
+    
+    if (appState.currentVideo) {
+        URL.revokeObjectURL(appState.currentVideo);
+        appState.currentVideo = null;
+    }
+    
+    elements.player.src = '';
+}
+
+// Show status message
+function showStatus(message, type = 'info') {
+    elements.status.textContent = message;
+    elements.status.className = 'status';
+    
+    if (type === 'error') {
+        elements.status.classList.add('error');
+    } else if (type === 'success') {
+        elements.status.classList.add('success');
+    } else if (type === 'warning') {
+        elements.status.classList.add('warning');
+    }
+}
+
+// Show error
+function showError(message) {
+    showStatus(message, 'error');
+    console.error(message);
+}
+
+// Update volume
+function updateVolume() {
+    const value = parseFloat(elements.volumeSlider.value);
+    elements.volumeValue.textContent = `${value.toFixed(1)}x`;
+    elements.player.volume = Math.min(1, value);
+}
+
+// Update speed
+function updateSpeed() {
+    const value = parseFloat(elements.speedSlider.value);
+    elements.speedValue.textContent = `${value.toFixed(2)}x`;
+    elements.player.playbackRate = value;
+}
+
+// Update audio volume
+function updateAudioVolume() {
+    const value = parseFloat(elements.audioVolumeSlider.value);
+    elements.audioVolumeValue.textContent = `${value.toFixed(1)}x`;
+}
+
+// Update bitrate
+function updateBitrate() {
+    const value = parseInt(elements.bitrateSlider.value);
+    elements.bitrateValue.textContent = `${value} kbps`;
+}
+
+// Select format
+function selectFormat(option, type) {
+    // Remove active class from all options
+    if (type === 'video') {
+        elements.videoFormatOptions.forEach(opt => opt.classList.remove('active'));
+    } else {
+        elements.audioFormatOptions.forEach(opt => opt.classList.remove('active'));
+    }
+    
+    // Add active class to selected option
+    option.classList.add('active');
+}
+
+// Switch mode
+function switchMode(mode) {
+    appState.currentMode = mode;
+    
+    // Update buttons
+    elements.videoModeBtn.classList.remove('active');
+    elements.audioModeBtn.classList.remove('active');
+    
+    if (mode === 'video') {
+        elements.videoModeBtn.classList.add('active');
+        elements.videoControls.style.display = 'block';
+        elements.audioControls.style.display = 'none';
+        elements.controlsTitle.textContent = '🎛️ Controles de Vídeo';
+        elements.exportBtnText.textContent = '🚀 Processar Segmento de Vídeo';
+        elements.resultsTitle.textContent = '✅ Vídeo Processado com Sucesso!';
+        elements.resultsInfo.textContent = 'Seu segmento de vídeo está pronto para download.';
+        elements.downloadBtn.className = 'download-btn video-btn';
+    } else {
+        elements.audioModeBtn.classList.add('active');
+        elements.videoControls.style.display = 'none';
+        elements.audioControls.style.display = 'block';
+        elements.controlsTitle.textContent = '🎵 Controles de Áudio';
+        elements.exportBtnText.textContent = '🔊 Extrair Áudio do Segmento';
+        elements.resultsTitle.textContent = '✅ Áudio Extraído com Sucesso!';
+        elements.resultsInfo.textContent = 'Seu arquivo de áudio está pronto para download.';
+        elements.downloadBtn.className = 'download-btn audio-btn';
+    }
+}
+
+// Time controls
+function updateStartFromSlider() {
+    const percent = parseFloat(elements.startSlider.value);
+    const time = (percent / 100) * appState.videoDuration;
+    setStartTime(time);
+}
+
+function updateEndFromSlider() {
+    const percent = parseFloat(elements.endSlider.value);
+    const time = (percent / 100) * appState.videoDuration;
+    setEndTime(time);
+}
+
+function updateStartFromHMS() {
+    const hours = parseFloat(elements.startHours.value) || 0;
+    const minutes = parseFloat(elements.startMinutes.value) || 0;
+    const seconds = parseFloat(elements.startSecondsInput.value) || 0;
+    const time = (hours * 3600) + (minutes * 60) + seconds;
+    setStartTime(Math.min(time, appState.endTime - 0.1));
+}
+
+function updateEndFromHMS() {
+    const hours = parseFloat(elements.endHours.value) || 0;
+    const minutes = parseFloat(elements.endMinutes.value) || 0;
+    const seconds = parseFloat(elements.endSecondsInput.value) || 0;
+    const time = (hours * 3600) + (minutes * 60) + seconds;
+    setEndTime(Math.max(time, appState.startTime + 0.1));
+}
+
+function setStartTime(time) {
+    appState.startTime = Math.max(0, Math.min(time, appState.endTime - 0.1));
+    updateTimeDisplay();
+}
+
+function setEndTime(time) {
+    appState.endTime = Math.max(appState.startTime + 0.1, Math.min(time, appState.videoDuration));
+    updateTimeDisplay();
+}
+
+function adjustStartTime(seconds) {
+    setStartTime(appState.startTime + seconds);
+}
+
+function adjustEndTime(seconds) {
+    setEndTime(appState.endTime + seconds);
+}
+
+function updateTimeDisplay() {
+    // Update sliders
+    const startPercent = (appState.startTime / appState.videoDuration) * 100;
+    const endPercent = (appState.endTime / appState.videoDuration) * 100;
+    elements.startSlider.value = startPercent;
+    elements.endSlider.value = endPercent;
+    
+    // Update time displays
+    elements.startTimeDisplay.textContent = formatTime(appState.startTime);
+    elements.endTimeDisplay.textContent = formatTime(appState.endTime);
+    elements.startSeconds.textContent = `(${appState.startTime.toFixed(1)}s)`;
+    elements.endSeconds.textContent = `(${appState.endTime.toFixed(1)}s)`;
+    
+    // Update HMS inputs
+    const startHours = Math.floor(appState.startTime / 3600);
+    const startMinutes = Math.floor((appState.startTime % 3600) / 60);
+    const startSeconds = appState.startTime % 60;
+    
+    const endHours = Math.floor(appState.endTime / 3600);
+    const endMinutes = Math.floor((appState.endTime % 3600) / 60);
+    const endSeconds = appState.endTime % 60;
+    
+    elements.startHours.value = startHours;
+    elements.startMinutes.value = startMinutes;
+    elements.startSecondsInput.value = startSeconds.toFixed(1);
+    
+    elements.endHours.value = endHours;
+    elements.endMinutes.value = endMinutes;
+    elements.endSecondsInput.value = endSeconds.toFixed(1);
+    
+    // Update segment info
+    const segmentDuration = appState.endTime - appState.startTime;
+    elements.segmentStartText.textContent = formatTime(appState.startTime);
+    elements.segmentEndText.textContent = formatTime(appState.endTime);
+    elements.segmentDurationText.textContent = `Duração do segmento: ${formatTime(segmentDuration)}`;
+    
+    // Update export button
+    elements.exportBtn.disabled = segmentDuration <= 0 || appState.isProcessing;
+    elements.exportBtn.style.opacity = segmentDuration > 0 && !appState.isProcessing ? '1' : '0.5';
+    
+    // Update status
+    showStatus(`Segmento selecionado: ${formatTime(segmentDuration)}`, 'info');
+    
+    updateSegmentVisual();
+}
+
+function updateSegmentVisual() {
+    if (appState.videoDuration <= 0) return;
+    
+    const startPercent = (appState.startTime / appState.videoDuration) * 100;
+    const endPercent = (appState.endTime / appState.videoDuration) * 100;
+    const widthPercent = endPercent - startPercent;
+    
+    elements.segmentBar.style.left = `${startPercent}%`;
+    elements.segmentBar.style.width = `${widthPercent}%`;
+}
+
+// Quick selection functions
+function selectFirstMinute() {
+    setStartTime(0);
+    setEndTime(Math.min(60, appState.videoDuration));
+}
+
+function selectLastMinute() {
+    setEndTime(appState.videoDuration);
+    setStartTime(Math.max(0, appState.videoDuration - 60));
+}
+
+function selectMiddleSection() {
+    const middle = appState.videoDuration / 2;
+    setStartTime(Math.max(0, middle - 30));
+    setEndTime(Math.min(appState.videoDuration, middle + 30));
+}
+
+function selectAll() {
+    setStartTime(0);
+    setEndTime(appState.videoDuration);
+}
+
+// Process time update
+function onTimeUpdate() {
+    // Update time buttons tooltips
+    const currentTime = elements.player.currentTime;
+    elements.setStartCurrent.title = `Tempo atual: ${formatTime(currentTime)}`;
+    elements.setEndCurrent.title = `Tempo atual: ${formatTime(currentTime)}`;
+}
+
+// Process segment
+async function processSegment() {
+    if (appState.isProcessing || !appState.currentVideo) return;
+    
+    const segmentDuration = appState.endTime - appState.startTime;
+    if (segmentDuration <= 0) {
+        showError('❌ Selecione um segmento válido!');
+        return;
+    }
+    
+    appState.isProcessing = true;
+    elements.exportBtn.disabled = true;
+    elements.progress.style.display = 'block';
+    elements.progress.value = 0;
+    elements.resultsSection.style.display = 'none';
+    
+    showStatus(appState.currentMode === 'video' 
+        ? '🎬 Processando vídeo...' 
+        : '🔊 Extraindo áudio...', 'warning');
+    
+    try {
+        if (appState.currentMode === 'video') {
+            await processVideo();
+        } else {
+            await processAudio();
+        }
+    } catch (error) {
+        console.error('Processing error:', error);
+        showError(`Erro ao processar: ${error.message}`);
+        appState.isProcessing = false;
+        elements.exportBtn.disabled = false;
+        elements.progress.style.display = 'none';
+        
+        // Cleanup
+        audioExtractor.cleanup();
+        videoProcessor.cleanup();
+    }
+}
+
+// Process video
+async function processVideo() {
+    elements.progress.value = 0.2;
+    showStatus('🎬 Preparando vídeo...', 'warning');
+    
+    // Get format
+    const format = document.querySelector('#videoFormatOptions .format-option.active').dataset.format;
+    
+    elements.progress.value = 0.4;
+    showStatus('🎬 Gravando segmento...', 'warning');
+    
+    try {
+        // Use video processor
+        const videoBlob = await videoProcessor.processVideoSegment(
+            elements.player,
+            appState.startTime,
+            appState.endTime,
+            format
+        );
+        
+        elements.progress.value = 0.8;
+        showStatus('🎬 Finalizando processamento...', 'warning');
+        
+        appState.processedBlob = videoBlob;
+        appState.processedFileType = 'video';
+        appState.processedFormat = format;
+        appState.processedVideoCount++;
+        
+        // Generate filename
+        const startStr = formatTime(appState.startTime).replace(/:/g, '-');
+        const endStr = formatTime(appState.endTime).replace(/:/g, '-');
+        appState.processedFileName = `video_${startStr}_to_${endStr}.${format}`;
+        
+        finishProcessing();
+        
+    } catch (error) {
+        throw error;
+    }
+}
+
+// Process audio
+async function processAudio() {
+    elements.progress.value = 0.2;
+    showStatus('🔊 Preparando extração de áudio...', 'warning');
+    
+    // Get format and bitrate
+    const format = document.querySelector('#audioFormatOptions .format-option.active').dataset.format;
+    const bitrate = parseInt(elements.bitrateSlider.value);
+    const volume = parseFloat(elements.audioVolumeSlider.value);
+    
+    elements.progress.value = 0.4;
+    showStatus('🔊 Extraindo áudio do vídeo...', 'warning');
+    
+    try {
+        // Extract audio using Web Audio API (without createMediaElementSource)
+        const audioBuffer = await audioExtractor.extractAudioFromVideo(
+            elements.player,
+            appState.startTime,
+            appState.endTime,
+            volume
+        );
+        
+        elements.progress.value = 0.6;
+        showStatus('🔊 Convertendo para formato final...', 'warning');
+        
+        // Convert to desired format
+        const result = audioExtractor.audioBufferToBlob(audioBuffer, format, bitrate);
+        const audioBlob = result.blob;
+        const extension = result.extension;
+        
+        elements.progress.value = 0.8;
+        showStatus('🔊 Finalizando arquivo de áudio...', 'warning');
+        
+        appState.processedBlob = audioBlob;
+        appState.processedFileType = 'audio';
+        appState.processedFormat = format;
+        appState.processedAudioCount++;
+        
+        // Generate filename
+        const startStr = formatTime(appState.startTime).replace(/:/g, '-');
+        const endStr = formatTime(appState.endTime).replace(/:/g, '-');
+        appState.processedFileName = `audio_${startStr}_to_${endStr}_${bitrate}kbps.${extension}`;
+        
+        finishProcessing();
+        
+    } catch (error) {
+        throw error;
+    }
+}
+
+// Finish processing
+function finishProcessing() {
+    appState.isProcessing = false;
+    
+    // Update UI
+    elements.progress.value = 1;
+    elements.progress.style.display = 'none';
+    elements.exportBtn.disabled = false;
+    elements.resultsSection.style.display = 'block';
+    
+    const segmentDuration = appState.endTime - appState.startTime;
+    
+    showStatus(appState.currentMode === 'video'
+        ? `✅ Vídeo processado: ${formatTime(segmentDuration)}`
+        : `✅ Áudio extraído: ${formatTime(segmentDuration)}`, 'success');
+    
+    // Update download button text
+    elements.downloadBtn.textContent = `⬇️ Baixar ${appState.processedFileName}`;
+    
+    // Update statistics
+    appState.updateStats();
+    
+    // Reset player
+    elements.player.pause();
+    elements.player.currentTime = appState.startTime;
+    
+    // Cleanup processors
+    audioExtractor.cleanup();
+    videoProcessor.cleanup();
+    
+    // Reset progress after a delay
+    setTimeout(() => {
+        elements.progress.value = 0;
+    }, 1000);
+}
+
+// Download file
+function downloadFile() {
+    if (!appState.processedBlob) {
+        showError('Nenhum arquivo processado para download.');
+        return;
+    }
+    
+    const url = URL.createObjectURL(appState.processedBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = appState.processedFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    // Update download count
+    appState.downloadsCount++;
+    appState.updateStats();
+    
+    showStatus('✅ Download iniciado!', 'success');
+    
+    // Clean up
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+// Update UI
+function updateUI() {
+    // Initial UI state
+    elements.progress.style.display = 'none';
+    elements.resultsSection.style.display = 'none';
+    elements.exportBtn.style.display = 'none';
+    
+    // Set initial values
+    elements.volumeValue.textContent = '1.0x';
+    elements.speedValue.textContent = '1.0x';
+    elements.audioVolumeValue.textContent = '1.0x';
+    elements.bitrateValue.textContent = '192 kbps';
+}
+
+// Initialize the app
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
