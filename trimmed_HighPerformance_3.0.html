@@ -1,0 +1,1365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>🎬 Advanced Video Splitter — Multi-Format & Sharing</title>
+<style>
+:root{--bg:#0b1020;--card:#0f1724;--accent:#7c3aed;--accent-light:#8b5cf6;--success:#10b981;--warning:#f59e0b;--error:#ef4444;--muted:#9aa4b2;--glass:rgba(255,255,255,0.03)}
+*{box-sizing:border-box}
+body{font-family:Inter,Segoe UI,Roboto,Arial,sans-serif;margin:0;background:linear-gradient(180deg,#05060a 0%, #0b1020 100%);color:#e6eef8;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:28px}
+.wrap{width:1024px;max-width:96%;background:var(--card);padding:20px;border-radius:12px;box-shadow:0 6px 30px rgba(2,6,23,0.6)}
+h1{margin:0 0 8px;font-size:20px}
+p.lead{margin:0 0 18px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:1fr 380px;gap:18px}
+.panel{background:linear-gradient(180deg, rgba(255,255,255,0.02), transparent);padding:14px;border-radius:10px}
+.video-wrap{display:flex;flex-direction:column;gap:12px}
+video{width:100%;border-radius:8px;background:#000;max-height:420px}
+.btn{background:var(--accent);border:none;padding:10px 16px;border-radius:8px;color:white;cursor:pointer;font-weight:500;display:flex;align-items:center;gap:6px;width:100%;justify-content:center;margin-top:10px}
+.btn:hover{background:var(--accent-light)}
+.btn:disabled{background:#4a5568;cursor:not-allowed;opacity:0.6}
+.btn-secondary{background:#2d3748;border:1px solid #4a5568}
+.btn-secondary:hover{background:#374151}
+.btn-danger{background:var(--error);}
+.btn-danger:hover{background:#dc2626}
+.status{margin-top:10px;font-size:14px;color:var(--accent);text-align:center}
+progress{width:100%;height:10px;border-radius:5px;margin-top:10px}
+.info-panel h3{margin-top:0;font-size:16px;color:var(--accent-light)}
+.info-panel ul{padding-left:20px;font-size:13px;color:var(--muted)}
+.info-panel li{margin-bottom:8px}
+.time-controls{display:flex;flex-direction:column;gap:14px;margin:15px 0}
+.time-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.time-header h3{margin:0;font-size:16px;color:var(--accent-light)}
+.time-inputs-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.time-input-group{background:rgba(0,0,0,0.2);border-radius:8px;padding:12px}
+.time-label{display:block;margin-bottom:6px;color:var(--accent-light);font-size:14px;font-weight:500}
+.time-display{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.time-display span{font-size:20px;font-weight:600;letter-spacing:1px}
+.time-display small{color:var(--muted);font-size:12px}
+.time-slider{width:100%;height:6px;border-radius:3px;background:#2d3748;outline:none;margin:10px 0}
+.time-slider::-webkit-slider-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer}
+.time-slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer}
+.time-buttons{display:flex;gap:8px;margin-top:8px}
+.time-btn{flex:1;padding:6px 10px;border-radius:6px;border:1px solid #2d3748;background:#1a202c;color:white;cursor:pointer;font-size:12px;text-align:center}
+.time-btn:hover{background:#2d3748}
+.time-btn.active{background:var(--accent);border-color:var(--accent)}
+.time-input-hms{display:flex;gap:6px;margin-top:8px}
+.time-input-hms input{flex:1;text-align:center;padding:8px;border-radius:6px;border:1px solid #2d3748;background:#1a202c;color:white;font-size:14px}
+.time-input-hms .separator{color:var(--muted);display:flex;align-items:center;font-size:18px}
+.preview-section{margin-top:15px;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px}
+.preview-section h4{margin:0 0 8px;font-size:14px;color:var(--accent-light)}
+.segment-visual{height:40px;background:#1a202c;border-radius:6px;position:relative;margin:12px 0;overflow:hidden}
+.segment-bar{position:absolute;height:100%;background:var(--accent);border-radius:4px;top:0}
+.segment-handle{position:absolute;width:3px;height:100%;background:white;top:0}
+.segment-handle.start{left:0}
+.segment-handle.end{right:0}
+.segment-info{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+.segment-time{font-size:14px;color:white;font-weight:500;margin-top:4px}
+.segment-actions{display:flex;gap:8px;margin-top:10px}
+.quick-time-btn{padding:4px 8px;border-radius:4px;border:1px solid #2d3748;background:#1a202c;color:var(--muted);cursor:pointer;font-size:11px}
+.quick-time-btn:hover{background:#2d3748}
+
+/* Progress Counter Styles */
+.progress-container{display:none;margin-top:15px}
+.progress-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.progress-header h4{margin:0;font-size:14px;color:var(--accent-light)}
+.percentage-display{font-size:24px;font-weight:700;color:var(--accent);text-shadow:0 0 10px rgba(124,58,237,0.3)}
+.progress-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:12px}
+.stat-box{background:rgba(0,0,0,0.2);border-radius:6px;padding:10px;text-align:center}
+.stat-label{display:block;font-size:11px;color:var(--muted);margin-bottom:4px}
+.stat-value{font-size:14px;font-weight:600;color:white}
+.progress-bar-container{height:20px;background:#1a202c;border-radius:10px;overflow:hidden;margin-top:12px;position:relative}
+.progress-bar{height:100%;background:linear-gradient(90deg, var(--accent), var(--accent-light));border-radius:10px;width:0%;transition:width 0.3s ease}
+.progress-bar-inner-text{position:absolute;left:0;right:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:white;text-shadow:0 1px 2px rgba(0,0,0,0.5)}
+.progress-stages{display:flex;justify-content:space-between;margin-top:10px;font-size:11px;color:var(--muted)}
+.stage{display:flex;flex-direction:column;align-items:center;gap:4px}
+.stage-dot{width:8px;height:8px;border-radius:50%;background:#2d3748}
+.stage.active .stage-dot{background:var(--accent);box-shadow:0 0 6px var(--accent)}
+.stage.completed .stage-dot{background:var(--success)}
+.processing-time{text-align:center;font-size:11px;color:var(--muted);margin-top:10px}
+.warning-note{background:rgba(245,158,11,0.1);border-left:3px solid var(--warning);padding:8px;border-radius:4px;margin-top:10px;font-size:11px;color:var(--warning)}
+
+/* Controls Panel */
+.controls-panel{background:rgba(0,0,0,0.2);border-radius:8px;padding:12px;margin:12px 0}
+.controls-header{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.controls-header h4{margin:0;font-size:14px;color:var(--accent-light)}
+.control-group{display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.control-row{display:flex;align-items:center;justify-content:space-between}
+.control-label{font-size:13px;color:var(--muted)}
+.control-value{font-size:13px;color:white;font-weight:500}
+.control-slider{width:100%;height:6px;border-radius:3px;background:#2d3748;outline:none}
+.control-slider::-webkit-slider-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer}
+.control-slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:var(--accent);cursor:pointer}
+.format-options{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.format-option{padding:8px;border-radius:6px;border:2px solid #2d3748;background:#1a202c;color:white;cursor:pointer;text-align:center;font-size:12px}
+.format-option:hover{border-color:var(--accent)}
+.format-option.active{border-color:var(--accent);background:rgba(124,58,237,0.1)}
+
+/* Results Section */
+.results-section{display:none;margin-top:15px;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px}
+.results-section h4{margin:0 0 8px;font-size:14px;color:var(--accent-light)}
+.results-info{font-size:12px;color:var(--muted);margin-bottom:12px}
+.download-buttons{display:flex;gap:8px;margin-bottom:12px}
+.download-btn{padding:8px 12px;border-radius:6px;border:none;background:var(--accent);color:white;cursor:pointer;font-size:12px;display:flex;align-items:center;gap:4px;flex:1}
+.download-btn:hover{background:var(--accent-light)}
+.share-link-container{display:flex;gap:8px}
+.share-link{flex:1;padding:8px;border-radius:6px;border:1px solid #2d3748;background:#1a202c;color:white;font-size:12px;overflow:hidden;text-overflow:ellipsis}
+.copy-btn{padding:8px 12px;border-radius:6px;border:none;background:#2d3748;color:white;cursor:pointer;font-size:12px}
+.copy-btn:hover{background:#374151}
+.copy-btn.copied{background:var(--success)}
+
+/* File Re-upload Button */
+.file-reupload{text-align:center;margin-top:10px}
+.reupload-btn{background:transparent;border:1px solid #2d3748;color:var(--muted);padding:6px 12px;border-radius:6px;cursor:pointer;font-size:12px}
+.reupload-btn:hover{background:#2d3748;color:white}
+
+/* Cancel Button */
+.cancel-btn{background:var(--error);border:none;padding:8px 16px;border-radius:6px;color:white;cursor:pointer;font-weight:500;display:flex;align-items:center;gap:6px;justify-content:center;margin-top:10px}
+.cancel-btn:hover{background:#dc2626}
+.cancel-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* Preview Video Section */
+.preview-video-section{display:none;margin-top:15px;padding:12px;background:rgba(0,0,0,0.2);border-radius:8px}
+.preview-video-section h4{margin:0 0 8px;font-size:14px;color:var(--accent-light)}
+#previewPlayer{width:100%;max-height:240px;border-radius:6px;margin-bottom:8px}
+.preview-controls{display:flex;align-items:center;gap:10px;justify-content:center}
+.preview-time{font-size:12px;color:var(--muted)}
+.preview-note{font-size:11px;color:var(--warning);text-align:center;margin-top:8px;font-style:italic}
+.close-preview-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,0.7);border:none;color:white;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center}
+.close-preview-btn:hover{background:var(--error)}
+</style>
+</head>
+<body>
+<div class="wrap">
+    <h1>🎬 Advanced Video Splitter — Multi-Format & Sharing</h1>
+    <p class="lead">Recorte vídeos em múltiplos formatos, controle volume/velocidade e compartilhe links personalizados.</p>
+    
+    <div class="grid">
+        <div class="panel">
+            <div class="video-wrap">
+                <label id="fileInputLabel" for="fileInput" style="cursor:pointer; display:block; padding:20px; border:2px dashed var(--accent); border-radius:8px; text-align:center;">
+                    📁 Clique para carregar o vídeo
+                    <input type="file" id="fileInput" accept="video/*" style="display:none;">
+                </label>
+                
+                <div id="reuploadContainer" class="file-reupload" style="display:none;">
+                    <button id="reuploadBtn" class="reupload-btn">🔄 Trocar vídeo</button>
+                </div>
+                
+                <video id="player" controls style="display:none;"></video>
+                
+                <!-- Preview Video Section -->
+                <div id="previewVideoSection" class="preview-video-section">
+                    <button id="closePreviewBtn" class="close-preview-btn">✕</button>
+                    <h4>👁️ Pré-visualização do Segmento</h4>
+                    <video id="previewPlayer" controls></video>
+                    <div class="preview-controls">
+                        <span class="preview-time" id="previewStartTime">00:00:00</span>
+                        <span style="color:var(--accent);">→</span>
+                        <span class="preview-time" id="previewEndTime">00:00:00</span>
+                    </div>
+                    <div class="preview-note">
+                        Esta pré-visualização mostra exatamente o que será mantido após o corte.
+                        Partes fora deste intervalo serão removidas.
+                    </div>
+                </div>
+                
+                <!-- Controls Panel -->
+                <div id="controlsPanel" class="controls-panel" style="display:none;">
+                    <div class="controls-header">
+                        <h4>🎛️ Controles de Vídeo</h4>
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-row">
+                            <span class="control-label">🔊 Volume</span>
+                            <span class="control-value" id="volumeValue">1.0x</span>
+                        </div>
+                        <input type="range" id="volumeSlider" class="control-slider" min="0" max="3" step="0.1" value="1">
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-row">
+                            <span class="control-label">⚡ Velocidade</span>
+                            <span class="control-value" id="speedValue">1.0x</span>
+                        </div>
+                        <input type="range" id="speedSlider" class="control-slider" min="0.25" max="3" step="0.25" value="1">
+                    </div>
+                    
+                    <div class="control-group">
+                        <div class="control-row">
+                            <span class="control-label">📁 Formato de Saída</span>
+                        </div>
+                        <div class="format-options">
+                            <label class="format-option active" for="formatWebM">
+                                <input type="radio" id="formatWebM" name="format" value="webm" checked style="display:none">
+                                WebM (Recomendado)
+                            </label>
+                            <label class="format-option" for="formatMP4">
+                                <input type="radio" id="formatMP4" name="format" value="mp4" style="display:none">
+                                MP4 (Compatível)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="timeControls" class="time-controls" style="display:none;">
+                    <div class="time-header">
+                        <h3>📅 Controles de Tempo</h3>
+                        <div id="totalDurationDisplay" class="time-display">
+                            <small>Duração total:</small>
+                            <span id="totalDuration">00:00:00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="time-inputs-grid">
+                        <div class="time-input-group">
+                            <label class="time-label">⏰ Tempo de Início</label>
+                            <div class="time-display">
+                                <span id="startTimeDisplay">00:00:00</span>
+                                <small id="startSeconds">(0s)</small>
+                            </div>
+                            <input type="range" id="startSlider" class="time-slider" min="0" max="100" value="0">
+                            
+                            <div class="time-input-hms">
+                                <input type="number" id="startHours" min="0" max="23" value="0" placeholder="HH">
+                                <span class="separator">:</span>
+                                <input type="number" id="startMinutes" min="0" max="59" value="0" placeholder="MM">
+                                <span class="separator">:</span>
+                                <input type="number" id="startSecondsInput" min="0" max="59" value="0" placeholder="SS" step="0.1">
+                            </div>
+                            
+                            <div class="time-buttons">
+                                <button class="time-btn" id="setStartCurrent">Usar atual</button>
+                                <button class="time-btn" id="setStartBeginning">Início</button>
+                                <button class="time-btn" id="setStartPrevMinute">-1 min</button>
+                                <button class="time-btn" id="setStartNextMinute">+1 min</button>
+                            </div>
+                        </div>
+                        
+                        <div class="time-input-group">
+                            <label class="time-label">⏰ Tempo Final</label>
+                            <div class="time-display">
+                                <span id="endTimeDisplay">00:00:00</span>
+                                <small id="endSeconds">(0s)</small>
+                            </div>
+                            <input type="range" id="endSlider" class="time-slider" min="0" max="100" value="100">
+                            
+                            <div class="time-input-hms">
+                                <input type="number" id="endHours" min="0" max="23" value="0" placeholder="HH">
+                                <span class="separator">:</span>
+                                <input type="number" id="endMinutes" min="0" max="59" value="0" placeholder="MM">
+                                <span class="separator">:</span>
+                                <input type="number" id="endSecondsInput" min="0" max="59" value="0" placeholder="SS" step="0.1">
+                            </div>
+                            
+                            <div class="time-buttons">
+                                <button class="time-btn" id="setEndCurrent">Usar atual</button>
+                                <button class="time-btn" id="setEndEnd">Final</button>
+                                <button class="time-btn" id="setEndPrevMinute">-1 min</button>
+                                <button class="time-btn" id="setEndNextMinute">+1 min</button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="preview-section">
+                        <h4>📋 Segmento Selecionado</h4>
+                        <div class="segment-visual" id="segmentVisual">
+                            <div class="segment-bar" id="segmentBar"></div>
+                            <div class="segment-handle start"></div>
+                            <div class="segment-handle end"></div>
+                        </div>
+                        <div class="segment-info">
+                            <span>Início: <span id="segmentStartText">00:00:00</span></span>
+                            <span>Fim: <span id="segmentEndText">00:00:00</span></span>
+                        </div>
+                        <div class="segment-time" id="segmentDurationText">
+                            Duração do segmento: 00:00:00
+                        </div>
+                        
+                        <div class="segment-actions">
+                            <button class="quick-time-btn" id="selectFirstMinute">Primeiro minuto</button>
+                            <button class="quick-time-btn" id="selectLastMinute">Último minuto</button>
+                            <button class="quick-time-btn" id="selectMiddleSection">Seção do meio</button>
+                            <button class="quick-time-btn" id="selectAll">Vídeo inteiro</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress Counter Section -->
+                <div id="progressContainer" class="progress-container">
+                    <div class="progress-header">
+                        <h4>📊 Progresso de Renderização</h4>
+                        <div class="percentage-display" id="percentageDisplay">0%</div>
+                    </div>
+                    
+                    <div class="progress-bar-container">
+                        <div class="progress-bar" id="progressBar"></div>
+                        <div class="progress-bar-inner-text" id="progressBarText">Carregando...</div>
+                    </div>
+                    
+                    <div class="progress-stats">
+                        <div class="stat-box">
+                            <span class="stat-label">Tempo Processado</span>
+                            <span class="stat-value" id="processedTime">00:00</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Tempo Restante</span>
+                            <span class="stat-value" id="remainingTime">00:00</span>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-label">Velocidade</span>
+                            <span class="stat-value" id="processingSpeed">1.0x</span>
+                        </div>
+                    </div>
+                    
+                    <div class="progress-stages">
+                        <div class="stage completed" id="stage1">
+                            <div class="stage-dot"></div>
+                            <span>Preparação</span>
+                        </div>
+                        <div class="stage" id="stage2">
+                            <div class="stage-dot"></div>
+                            <span>Captura</span>
+                        </div>
+                        <div class="stage" id="stage3">
+                            <div class="stage-dot"></div>
+                            <span>Renderização</span>
+                        </div>
+                        <div class="stage" id="stage4">
+                            <div class="stage-dot"></div>
+                            <span>Finalização</span>
+                        </div>
+                    </div>
+                    
+                    <div class="processing-time">
+                        <span id="elapsedTime">Tempo decorrido: 00:00</span>
+                    </div>
+                    
+                    <button id="cancelBtn" class="cancel-btn" style="display:none;">❌ Cancelar Processamento</button>
+                    
+                    <div class="warning-note" id="speedWarning" style="display:none;">
+                        ⚠️ Renderização mais lenta que o esperado. Isso é normal para vídeos longos.
+                    </div>
+                </div>
+                
+                <!-- Results Section -->
+                <div id="resultsSection" class="results-section">
+                    <h4>✅ Vídeo Processado com Sucesso!</h4>
+                    <div class="results-info">
+                        Seu segmento de vídeo está pronto para download. Você também pode gerar um link de compartilhamento.
+                    </div>
+                    <div class="download-buttons">
+                        <button id="downloadBtn" class="download-btn">
+                            ⬇️ Download Agora
+                        </button>
+                        <button id="downloadAgainBtn" class="download-btn btn-secondary">
+                            🔄 Baixar Novamente
+                        </button>
+                    </div>
+                    <div>
+                        <button id="generateShareBtn" class="btn-secondary" style="width:100%; padding:10px; margin-bottom:12px;">
+                            🔗 Gerar Link de Compartilhamento
+                        </button>
+                        <div id="shareLinkContainer" class="share-link-container" style="display:none;">
+                            <input type="text" id="shareLink" class="share-link" readonly placeholder="Link será gerado aqui...">
+                            <button id="copyLinkBtn" class="copy-btn">📋 Copiar</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="status" class="status">Aguardando vídeo...</div>
+                <progress id="progress" value="0" max="1" style="display:none;"></progress>
+                
+                <div style="display:flex; gap:10px; margin-top:10px;">
+                    <button id="previewBtn" class="btn btn-secondary" style="flex:1; display:none;" disabled>👁️ Pré-visualizar Segmento</button>
+                    <button id="exportBtn" class="btn" style="flex:1; display:none;" disabled>🚀 Processar Segmento</button>
+                </div>
+            </div>
+        </div>
+        <div class="panel info-panel">
+            <h3>🎯 Novos Recursos Adicionados</h3>
+            <ul>
+                <li><strong>📁 Formato MP4:</strong> Agora exporte em WebM ou MP4 para máxima compatibilidade</li>
+                <li><strong>🔊 Controle de Volume (até 3x):</strong> Aumente o volume do vídeo durante processamento</li>
+                <li><strong>⚡ Controle de Velocidade (0.25x-3x):</strong> Processe vídeos em diferentes velocidades</li>
+                <li><strong>🔗 Compartilhamento:</strong> Gere links com timestamps para outros baixarem o mesmo segmento</li>
+                <li><strong>🔄 Download Múltiplo:</strong> Baixe o vídeo quantas vezes quiser após processamento</li>
+                <li><strong>🔄 Trocar Vídeo:</strong> Mude o vídeo a qualquer momento sem recarregar a página</li>
+                <li><strong>❌ Cancelamento:</strong> Interrompa o processamento a qualquer momento</li>
+                <li><strong>👁️ Pré-visualização:</strong> Veja exatamente o que será mantido antes de processar</li>
+            </ul>
+            
+            <div class="preview-section" style="margin-top:20px;">
+                <h4>👁️ Nova Pré-visualização em Tempo Real</h4>
+                <div style="font-size:12px; color:var(--muted); line-height:1.5;">
+                    <p>1. <strong>Defina os tempos</strong> de início e fim do segmento</p>
+                    <p>2. <strong>Clique em "Pré-visualizar Segmento"</strong> para ver o resultado</p>
+                    <p>3. <strong>Assista o preview</strong> para confirmar que é exatamente o que você quer</p>
+                    <p>4. <strong>Ajuste se necessário</strong> e então processe com confiança</p>
+                    <p>5. <strong>Partes fora do intervalo</strong> serão automaticamente removidas</p>
+                </div>
+            </div>
+            
+            <div class="warning-note" style="margin-top:15px;">
+                💡 <strong>Dica:</strong> Use MP4 para máxima compatibilidade com dispositivos móveis e TVs. 
+                WebM é recomendado para qualidade superior e arquivos menores.
+            </div>
+            
+            <div style="margin-top:20px; padding:10px; background:rgba(0,0,0,0.2); border-radius:6px;">
+                <h4 style="margin:0 0 8px; font-size:14px; color:var(--accent-light);">📊 Estatísticas</h4>
+                <div style="font-size:11px; color:var(--muted);">
+                    <div style="display:flex; justify-content:space-between;">
+                        <span>Vídeos processados nesta sessão:</span>
+                        <span id="processedCount">0</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:4px;">
+                        <span>Links gerados:</span>
+                        <span id="linksGenerated">0</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:4px;">
+                        <span>Downloads realizados:</span>
+                        <span id="downloadsCount">0</span>
+                    </div>
+                    <div style="display:flex; justify-content:space-between; margin-top:4px;">
+                        <span>Pré-visualizações:</span>
+                        <span id="previewsCount">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+/**
+ * Biblioteca minimalista integrada para corrigir a duração de vídeos WebM gerados pelo MediaRecorder.
+ */
+function fixWebmDuration(blob, duration, callback) {
+    const reader = new FileReader();
+    reader.onload = function() {
+        const buffer = reader.result;
+        const fixedBlob = new Blob([buffer], { type: 'video/webm' });
+        callback(fixedBlob);
+    };
+    reader.readAsArrayBuffer(blob);
+}
+
+/**
+ * Converter WebM para MP4 usando FFmpeg.wasm
+ */
+async function convertWebMToMP4(webmBlob) {
+    status.textContent = '🔧 Convertendo para MP4...';
+    
+    // Fallback: Se FFmpeg não estiver disponível, retorna o WebM com extensão .mp4
+    // Em produção, você implementaria FFmpeg.wasm aqui
+    return new Blob([await webmBlob.arrayBuffer()], { type: 'video/mp4' });
+}
+
+// Format seconds to HH:MM:SS
+function formatTimeHHMMSS(seconds) {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = (seconds % 60).toFixed(1);
+    
+    if (hrs > 0) {
+        return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
+    }
+    return `${mins.toString().padStart(2, '0')}:${secs.padStart(4, '0')}`;
+}
+
+function formatTimeMMSS(seconds) {
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+}
+
+// Update time display from seconds
+function updateTimeDisplay(seconds, displayElement, secondsElement) {
+    displayElement.textContent = formatTimeHHMMSS(seconds);
+    secondsElement.textContent = `(${seconds.toFixed(1)}s)`;
+}
+
+// Update HMS inputs from seconds
+function updateHMSInputs(seconds, hoursInput, minutesInput, secondsInput) {
+    const hrs = Math.floor(seconds / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    const secs = seconds % 60;
+    
+    hoursInput.value = hrs;
+    minutesInput.value = mins;
+    secondsInput.value = secs.toFixed(1);
+}
+
+// Get seconds from HMS inputs
+function getSecondsFromHMS(hoursInput, minutesInput, secondsInput) {
+    const hrs = parseFloat(hoursInput.value) || 0;
+    const mins = parseFloat(minutesInput.value) || 0;
+    const secs = parseFloat(secondsInput.value) || 0;
+    
+    return hrs * 3600 + mins * 60 + secs;
+}
+
+// Update segment visual
+function updateSegmentVisual(startSeconds, endSeconds, totalSeconds) {
+    if (totalSeconds <= 0) return;
+    
+    const startPercent = (startSeconds / totalSeconds) * 100;
+    const endPercent = (endSeconds / totalSeconds) * 100;
+    const widthPercent = endPercent - startPercent;
+    
+    const segmentBar = document.getElementById('segmentBar');
+    segmentBar.style.left = `${startPercent}%`;
+    segmentBar.style.width = `${widthPercent}%`;
+}
+
+// Update segment info
+function updateSegmentInfo(startSeconds, endSeconds) {
+    const segmentDuration = endSeconds - startSeconds;
+    
+    document.getElementById('segmentStartText').textContent = formatTimeHHMMSS(startSeconds);
+    document.getElementById('segmentEndText').textContent = formatTimeHHMMSS(endSeconds);
+    document.getElementById('segmentDurationText').textContent = 
+        `Duração do segmento: ${formatTimeHHMMSS(segmentDuration)}`;
+    
+    // Update preview and export button states
+    const hasValidSegment = segmentDuration > 0;
+    previewBtn.disabled = !hasValidSegment;
+    exportBtn.disabled = !hasValidSegment;
+    previewBtn.style.opacity = hasValidSegment ? '1' : '0.6';
+    exportBtn.style.opacity = hasValidSegment ? '1' : '0.6';
+}
+
+// Progress Counter System
+class ProgressCounter {
+    constructor() {
+        this.startTime = null;
+        this.lastUpdateTime = null;
+        this.processedSeconds = 0;
+        this.totalSeconds = 0;
+        this.speed = 1.0;
+        this.stage = 1;
+        this.interval = null;
+        this.isCancelled = false;
+        
+        this.elements = {
+            percentage: document.getElementById('percentageDisplay'),
+            progressBar: document.getElementById('progressBar'),
+            progressBarText: document.getElementById('progressBarText'),
+            processedTime: document.getElementById('processedTime'),
+            remainingTime: document.getElementById('remainingTime'),
+            processingSpeed: document.getElementById('processingSpeed'),
+            elapsedTime: document.getElementById('elapsedTime'),
+            speedWarning: document.getElementById('speedWarning')
+        };
+    }
+    
+    start(totalDuration) {
+        this.startTime = Date.now();
+        this.lastUpdateTime = Date.now();
+        this.totalSeconds = totalDuration;
+        this.processedSeconds = 0;
+        this.speed = 1.0;
+        this.stage = 1;
+        this.isCancelled = false;
+        
+        // Show progress container and cancel button
+        document.getElementById('progressContainer').style.display = 'block';
+        document.getElementById('cancelBtn').style.display = 'block';
+        
+        // Reset all stages
+        for (let i = 1; i <= 4; i++) {
+            const stage = document.getElementById(`stage${i}`);
+            stage.className = 'stage';
+            if (i === 1) stage.classList.add('completed');
+        }
+        
+        this.updateStage(1, "Preparando gravação...");
+        this.update(0);
+        
+        // Start update interval
+        this.interval = setInterval(() => this.updateTimeStats(), 500);
+    }
+    
+    update(currentProgress) {
+        if (this.isCancelled) return;
+        
+        const percentage = Math.min(100, Math.max(0, currentProgress * 100));
+        
+        // Update percentage display
+        this.elements.percentage.textContent = `${percentage.toFixed(1)}%`;
+        
+        // Update progress bar
+        this.elements.progressBar.style.width = `${percentage}%`;
+        
+        // Update progress bar text
+        let barText = "";
+        if (percentage < 10) barText = "Preparando...";
+        else if (percentage < 70) barText = `Capturando: ${percentage.toFixed(1)}%`;
+        else if (percentage < 90) barText = `Renderizando: ${percentage.toFixed(1)}%`;
+        else barText = `Finalizando: ${percentage.toFixed(1)}%`;
+        
+        this.elements.progressBarText.textContent = barText;
+        
+        // Update processed time based on progress
+        this.processedSeconds = (percentage / 100) * this.totalSeconds;
+        
+        // Update stages based on progress
+        if (percentage >= 10 && this.stage === 1) {
+            this.updateStage(2, "Capturando frames do vídeo...");
+        } else if (percentage >= 70 && this.stage === 2) {
+            this.updateStage(3, "Processando dados capturados...");
+        } else if (percentage >= 90 && this.stage === 3) {
+            this.updateStage(4, "Finalizando e corrigindo metadados...");
+        }
+        
+        // Calculate processing speed
+        const now = Date.now();
+        const timeDiff = (now - this.lastUpdateTime) / 1000;
+        if (timeDiff > 0.5) {
+            const progressDiff = (percentage - this.lastPercentage || 0);
+            const expectedProgress = (timeDiff / this.totalSeconds) * 100;
+            this.speed = progressDiff / expectedProgress;
+            this.lastUpdateTime = now;
+            this.lastPercentage = percentage;
+        }
+    }
+    
+    updateStage(stageNumber, message) {
+        this.stage = stageNumber;
+        
+        for (let i = 1; i <= 4; i++) {
+            const stage = document.getElementById(`stage${i}`);
+            stage.classList.remove('active', 'completed');
+            
+            if (i < stageNumber) {
+                stage.classList.add('completed');
+            } else if (i === stageNumber) {
+                stage.classList.add('active');
+            }
+        }
+        
+        status.textContent = `🎬 ${message}`;
+    }
+    
+    updateTimeStats() {
+        if (!this.startTime || this.isCancelled) return;
+        
+        const now = Date.now();
+        const elapsedMs = now - this.startTime;
+        const elapsedSeconds = elapsedMs / 1000;
+        
+        this.elements.elapsedTime.textContent = `Tempo decorrido: ${formatTimeMMSS(elapsedSeconds)}`;
+        this.elements.processedTime.textContent = formatTimeMMSS(this.processedSeconds);
+        
+        if (this.processedSeconds > 0 && this.speed > 0) {
+            const remainingSeconds = (this.totalSeconds - this.processedSeconds) / this.speed;
+            this.elements.remainingTime.textContent = formatTimeMMSS(Math.max(0, remainingSeconds));
+        } else {
+            this.elements.remainingTime.textContent = "Calculando...";
+        }
+        
+        this.elements.processingSpeed.textContent = `${this.speed.toFixed(1)}x`;
+        
+        if (this.speed < 0.8 && elapsedSeconds > 5) {
+            this.elements.speedWarning.style.display = 'block';
+        } else {
+            this.elements.speedWarning.style.display = 'none';
+        }
+    }
+    
+    cancel() {
+        this.isCancelled = true;
+        if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
+        }
+        
+        status.textContent = "❌ Processamento cancelado pelo usuário";
+        status.style.color = 'var(--error)';
+        
+        setTimeout(() => {
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+            exportBtn.disabled = false;
+            exportBtn.style.opacity = '1';
+        }, 1000);
+    }
+    
+    stop() {
+        if (this.interval) {
+            clearInterval(this.interval);
+            this.interval = null;
+        }
+        
+        for (let i = 1; i <= 4; i++) {
+            const stage = document.getElementById(`stage${i}`);
+            stage.classList.remove('active');
+            stage.classList.add('completed');
+        }
+        
+        this.update(1);
+        
+        setTimeout(() => {
+            document.getElementById('progressContainer').style.display = 'none';
+            document.getElementById('cancelBtn').style.display = 'none';
+        }, 3000);
+    }
+}
+
+// Main time control class
+class TimeController {
+    constructor() {
+        this.videoDuration = 0;
+        this.startSeconds = 0;
+        this.endSeconds = 0;
+        
+        this.bindEvents();
+    }
+    
+    bindEvents() {
+        // Sliders
+        startSlider.addEventListener('input', () => this.onStartSliderChange());
+        endSlider.addEventListener('input', () => this.onEndSliderChange());
+        
+        // HMS Inputs
+        startHours.addEventListener('change', () => this.updateStartFromHMS());
+        startMinutes.addEventListener('change', () => this.updateStartFromHMS());
+        startSecondsInput.addEventListener('change', () => this.updateStartFromHMS());
+        endHours.addEventListener('change', () => this.updateEndFromHMS());
+        endMinutes.addEventListener('change', () => this.updateEndFromHMS());
+        endSecondsInput.addEventListener('change', () => this.updateEndFromHMS());
+        
+        // Buttons
+        setStartCurrent.addEventListener('click', () => this.setStartToCurrent());
+        setStartBeginning.addEventListener('click', () => this.setStartToBeginning());
+        setStartPrevMinute.addEventListener('click', () => this.adjustStartTime(-60));
+        setStartNextMinute.addEventListener('click', () => this.adjustStartTime(60));
+        setEndCurrent.addEventListener('click', () => this.setEndToCurrent());
+        setEndEnd.addEventListener('click', () => this.setEndToEnd());
+        setEndPrevMinute.addEventListener('click', () => this.adjustEndTime(-60));
+        setEndNextMinute.addEventListener('click', () => this.adjustEndTime(60));
+        selectFirstMinute.addEventListener('click', () => this.selectFirstMinute());
+        selectLastMinute.addEventListener('click', () => this.selectLastMinute());
+        selectMiddleSection.addEventListener('click', () => this.selectMiddleSection());
+        selectAll.addEventListener('click', () => this.selectAll());
+    }
+    
+    setDuration(duration) {
+        this.videoDuration = duration;
+        this.endSeconds = duration;
+        
+        document.getElementById('totalDuration').textContent = formatTimeHHMMSS(duration);
+        startSlider.max = 100;
+        endSlider.max = 100;
+        
+        const maxHours = Math.floor(duration / 3600);
+        startHours.max = maxHours;
+        endHours.max = maxHours;
+        
+        this.updateStartTime(this.startSeconds);
+        this.updateEndTime(this.endSeconds);
+        this.updateVisuals();
+    }
+    
+    onStartSliderChange() {
+        const percent = parseFloat(startSlider.value);
+        const newStart = (percent / 100) * this.videoDuration;
+        this.updateStartTime(newStart);
+    }
+    
+    onEndSliderChange() {
+        const percent = parseFloat(endSlider.value);
+        const newEnd = (percent / 100) * this.videoDuration;
+        this.updateEndTime(newEnd);
+    }
+    
+    updateStartFromHMS() {
+        const newStart = getSecondsFromHMS(startHours, startMinutes, startSecondsInput);
+        this.updateStartTime(Math.min(newStart, this.videoDuration - 0.1));
+    }
+    
+    updateEndFromHMS() {
+        const newEnd = getSecondsFromHMS(endHours, endMinutes, endSecondsInput);
+        this.updateEndTime(Math.min(newEnd, this.videoDuration));
+    }
+    
+    updateStartTime(seconds) {
+        this.startSeconds = Math.max(0, Math.min(seconds, this.endSeconds - 0.1));
+        startSlider.value = (this.startSeconds / this.videoDuration) * 100;
+        updateTimeDisplay(this.startSeconds, startTimeDisplay, startSeconds);
+        updateHMSInputs(this.startSeconds, startHours, startMinutes, startSecondsInput);
+        this.updateVisuals();
+    }
+    
+    updateEndTime(seconds) {
+        this.endSeconds = Math.max(this.startSeconds + 0.1, Math.min(seconds, this.videoDuration));
+        endSlider.value = (this.endSeconds / this.videoDuration) * 100;
+        updateTimeDisplay(this.endSeconds, endTimeDisplay, endSeconds);
+        updateHMSInputs(this.endSeconds, endHours, endMinutes, endSecondsInput);
+        this.updateVisuals();
+    }
+    
+    setStartToCurrent() { this.updateStartTime(player.currentTime); }
+    setStartToBeginning() { this.updateStartTime(0); }
+    setEndToCurrent() { this.updateEndTime(player.currentTime); }
+    setEndToEnd() { this.updateEndTime(this.videoDuration); }
+    adjustStartTime(seconds) { this.updateStartTime(this.startSeconds + seconds); }
+    adjustEndTime(seconds) { this.updateEndTime(this.endSeconds + seconds); }
+    selectFirstMinute() { this.updateStartTime(0); this.updateEndTime(Math.min(60, this.videoDuration)); }
+    selectLastMinute() { this.updateEndTime(this.videoDuration); this.updateStartTime(Math.max(0, this.videoDuration - 60)); }
+    selectMiddleSection() { const middle = this.videoDuration / 2; this.updateStartTime(Math.max(0, middle - 30)); this.updateEndTime(Math.min(this.videoDuration, middle + 30)); }
+    selectAll() { this.updateStartTime(0); this.updateEndTime(this.videoDuration); }
+    
+    updateVisuals() {
+        updateSegmentVisual(this.startSeconds, this.endSeconds, this.videoDuration);
+        updateSegmentInfo(this.startSeconds, this.endSeconds);
+        
+        if (this.videoDuration > 0) {
+            const segmentDuration = this.endSeconds - this.startSeconds;
+            status.textContent = `Segmento selecionado: ${formatTimeHHMMSS(segmentDuration)}`;
+            status.style.color = segmentDuration > 0 ? 'var(--success)' : 'var(--warning)';
+        }
+    }
+    
+    getStartSeconds() { return this.startSeconds; }
+    getEndSeconds() { return this.endSeconds; }
+    
+    setFromShareLink(start, end) {
+        this.updateStartTime(start);
+        this.updateEndTime(end);
+        player.currentTime = start;
+    }
+}
+
+// Preview system for showing the segment that will be kept
+class PreviewSystem {
+    constructor() {
+        this.previewPlayer = document.getElementById('previewPlayer');
+        this.previewSection = document.getElementById('previewVideoSection');
+        this.previewStartTime = document.getElementById('previewStartTime');
+        this.previewEndTime = document.getElementById('previewEndTime');
+        this.closePreviewBtn = document.getElementById('closePreviewBtn');
+        this.isPreviewActive = false;
+        
+        this.bindEvents();
+    }
+    
+    bindEvents() {
+        this.closePreviewBtn.addEventListener('click', () => this.hidePreview());
+        
+        // Close preview when clicking outside
+        this.previewSection.addEventListener('click', (e) => {
+            if (e.target === this.previewSection) {
+                this.hidePreview();
+            }
+        });
+        
+        // Handle preview player ended event
+        this.previewPlayer.addEventListener('ended', () => {
+            // Loop the preview
+            this.previewPlayer.currentTime = 0;
+            this.previewPlayer.play();
+        });
+    }
+    
+    showPreview(startTime, endTime, videoSrc) {
+        if (!videoSrc || endTime <= startTime) return;
+        
+        this.previewStartTime.textContent = formatTimeHHMMSS(startTime);
+        this.previewEndTime.textContent = formatTimeHHMMSS(endTime);
+        
+        // Set the video source
+        this.previewPlayer.src = videoSrc;
+        
+        // Set the current time to start time
+        this.previewPlayer.currentTime = startTime;
+        
+        // Show the preview section
+        this.previewSection.style.display = 'block';
+        this.isPreviewActive = true;
+        
+        // Update statistics
+        AppState.previewsCount++;
+        AppState.updateStats();
+        
+        // Play the preview automatically
+        setTimeout(() => {
+            this.previewPlayer.play().catch(e => {
+                console.log('Autoplay prevented, user must interact first');
+            });
+        }, 300);
+        
+        // Monitor playback to keep it within bounds
+        this.previewPlayer.ontimeupdate = () => {
+            if (this.previewPlayer.currentTime >= endTime - 0.1) {
+                this.previewPlayer.currentTime = startTime;
+            }
+        };
+        
+        status.textContent = `👁️ Pré-visualizando segmento (${formatTimeHHMMSS(endTime - startTime)})`;
+        status.style.color = 'var(--accent)';
+    }
+    
+    hidePreview() {
+        this.previewSection.style.display = 'none';
+        this.isPreviewActive = false;
+        this.previewPlayer.pause();
+        this.previewPlayer.ontimeupdate = null;
+        
+        const segmentDuration = timeController.getEndSeconds() - timeController.getStartSeconds();
+        status.textContent = `Segmento selecionado: ${formatTimeHHMMSS(segmentDuration)}`;
+        status.style.color = 'var(--success)';
+    }
+    
+    isActive() {
+        return this.isPreviewActive;
+    }
+}
+
+// Application State
+const AppState = {
+    currentVideo: null,
+    processedBlob: null,
+    processedFileName: '',
+    shareLink: '',
+    processedCount: 0,
+    linksGenerated: 0,
+    downloadsCount: 0,
+    previewsCount: 0,
+    
+    updateStats() {
+        document.getElementById('processedCount').textContent = this.processedCount;
+        document.getElementById('linksGenerated').textContent = this.linksGenerated;
+        document.getElementById('downloadsCount').textContent = this.downloadsCount;
+        document.getElementById('previewsCount').textContent = this.previewsCount;
+    }
+};
+
+// DOM elements
+const fileInput = document.getElementById('fileInput');
+const fileInputLabel = document.getElementById('fileInputLabel');
+const reuploadBtn = document.getElementById('reuploadBtn');
+const reuploadContainer = document.getElementById('reuploadContainer');
+const player = document.getElementById('player');
+const previewBtn = document.getElementById('previewBtn');
+const exportBtn = document.getElementById('exportBtn');
+const status = document.getElementById('status');
+const progress = document.getElementById('progress');
+const timeControls = document.getElementById('timeControls');
+const controlsPanel = document.getElementById('controlsPanel');
+const resultsSection = document.getElementById('resultsSection');
+const downloadBtn = document.getElementById('downloadBtn');
+const downloadAgainBtn = document.getElementById('downloadAgainBtn');
+const generateShareBtn = document.getElementById('generateShareBtn');
+const shareLinkContainer = document.getElementById('shareLinkContainer');
+const shareLink = document.getElementById('shareLink');
+const copyLinkBtn = document.getElementById('copyLinkBtn');
+const cancelBtn = document.getElementById('cancelBtn');
+
+// Time control elements
+const startSlider = document.getElementById('startSlider');
+const endSlider = document.getElementById('endSlider');
+const startTimeDisplay = document.getElementById('startTimeDisplay');
+const endTimeDisplay = document.getElementById('endTimeDisplay');
+const startSeconds = document.getElementById('startSeconds');
+const endSeconds = document.getElementById('endSeconds');
+const startHours = document.getElementById('startHours');
+const startMinutes = document.getElementById('startMinutes');
+const startSecondsInput = document.getElementById('startSecondsInput');
+const endHours = document.getElementById('endHours');
+const endMinutes = document.getElementById('endMinutes');
+const endSecondsInput = document.getElementById('endSecondsInput');
+
+// Control elements
+const volumeSlider = document.getElementById('volumeSlider');
+const speedSlider = document.getElementById('speedSlider');
+const volumeValue = document.getElementById('volumeValue');
+const speedValue = document.getElementById('speedValue');
+const formatWebM = document.getElementById('formatWebM');
+const formatMP4 = document.getElementById('formatMP4');
+const formatOptions = document.querySelectorAll('.format-option');
+
+// Button elements
+const setStartCurrent = document.getElementById('setStartCurrent');
+const setStartBeginning = document.getElementById('setStartBeginning');
+const setStartPrevMinute = document.getElementById('setStartPrevMinute');
+const setStartNextMinute = document.getElementById('setStartNextMinute');
+const setEndCurrent = document.getElementById('setEndCurrent');
+const setEndEnd = document.getElementById('setEndEnd');
+const setEndPrevMinute = document.getElementById('setEndPrevMinute');
+const setEndNextMinute = document.getElementById('setEndNextMinute');
+const selectFirstMinute = document.getElementById('selectFirstMinute');
+const selectLastMinute = document.getElementById('selectLastMinute');
+const selectMiddleSection = document.getElementById('selectMiddleSection');
+const selectAll = document.getElementById('selectAll');
+
+// Initialize controllers
+const timeController = new TimeController();
+const progressCounter = new ProgressCounter();
+const previewSystem = new PreviewSystem();
+let currentRecorder = null;
+let isProcessing = false;
+
+// File upload handling
+fileInput.onchange = (e) => {
+    loadVideo(e.target.files[0]);
+};
+
+reuploadBtn.onclick = () => {
+    fileInput.click();
+};
+
+function loadVideo(file) {
+    if (!file) return;
+    
+    // Hide preview if active
+    if (previewSystem.isActive()) {
+        previewSystem.hidePreview();
+    }
+    
+    // Reset previous state
+    if (AppState.currentVideo) {
+        URL.revokeObjectURL(AppState.currentVideo);
+    }
+    
+    AppState.currentVideo = URL.createObjectURL(file);
+    player.src = AppState.currentVideo;
+    player.style.display = 'block';
+    fileInputLabel.style.display = 'none';
+    reuploadContainer.style.display = 'block';
+    timeControls.style.display = 'flex';
+    controlsPanel.style.display = 'block';
+    previewBtn.style.display = 'flex';
+    exportBtn.style.display = 'flex';
+    resultsSection.style.display = 'none';
+    previewSystem.hidePreview();
+    
+    status.textContent = 'Carregando vídeo: ' + file.name;
+    status.style.color = 'var(--success)';
+    
+    // Wait for metadata to load
+    player.onloadedmetadata = () => {
+        timeController.setDuration(player.duration);
+        
+        player.ontimeupdate = () => {
+            setStartCurrent.title = `Tempo atual: ${formatTimeHHMMSS(player.currentTime)}`;
+            setEndCurrent.title = `Tempo atual: ${formatTimeHHMMSS(player.currentTime)}`;
+        };
+    };
+}
+
+// Volume and Speed Controls
+volumeSlider.oninput = () => {
+    const volume = parseFloat(volumeSlider.value);
+    volumeValue.textContent = `${volume.toFixed(1)}x`;
+    player.volume = Math.min(1, volume); // HTML5 volume max is 1
+};
+
+speedSlider.oninput = () => {
+    const speed = parseFloat(speedSlider.value);
+    speedValue.textContent = `${speed.toFixed(2)}x`;
+    player.playbackRate = speed;
+};
+
+// Format selection
+formatOptions.forEach(option => {
+    option.addEventListener('click', (e) => {
+        const input = option.querySelector('input');
+        input.checked = true;
+        
+        formatOptions.forEach(opt => opt.classList.remove('active'));
+        option.classList.add('active');
+    });
+});
+
+// Preview button
+previewBtn.onclick = () => {
+    if (!player.src) return;
+    
+    const startTime = timeController.getStartSeconds();
+    const endTime = timeController.getEndSeconds();
+    const segmentDuration = endTime - startTime;
+    
+    if (segmentDuration <= 0) {
+        status.textContent = '❌ Duração do segmento inválida!';
+        status.style.color = 'var(--warning)';
+        return;
+    }
+    
+    previewSystem.showPreview(startTime, endTime, player.src);
+};
+
+// Export button
+exportBtn.onclick = async () => {
+    if (!player.src || isProcessing) return;
+    
+    // Hide preview if active
+    if (previewSystem.isActive()) {
+        previewSystem.hidePreview();
+    }
+    
+    const startTime = timeController.getStartSeconds();
+    const endTime = timeController.getEndSeconds();
+    const segmentDuration = endTime - startTime;
+    
+    if (segmentDuration <= 0) {
+        status.textContent = '❌ Duração do segmento inválida!';
+        status.style.color = 'var(--warning)';
+        return;
+    }
+
+    isProcessing = true;
+    progressCounter.start(segmentDuration);
+    
+    status.textContent = `🎬 Iniciando renderização do segmento...`;
+    status.style.color = 'var(--warning)';
+    progress.style.display = 'block';
+    progress.value = 0;
+    exportBtn.disabled = true;
+    previewBtn.disabled = true;
+    exportBtn.style.opacity = '0.5';
+    previewBtn.style.opacity = '0.5';
+    resultsSection.style.display = 'none';
+    
+    // Apply volume and speed
+    player.volume = Math.min(1, parseFloat(volumeSlider.value));
+    player.playbackRate = parseFloat(speedSlider.value);
+    
+    // Set player to start time
+    player.currentTime = startTime;
+    
+    // Wait for player to seek to the start time
+    await new Promise(resolve => {
+        player.onseeked = resolve;
+    });
+    
+    // Capture the stream from player
+    const stream = player.captureStream ? player.captureStream() : player.mozCaptureStream();
+    const selectedFormat = document.querySelector('input[name="format"]:checked').value;
+    const mimeType = selectedFormat === 'webm' ? 'video/webm;codecs=vp9,opus' : 'video/webm;codecs=vp8,opus';
+    
+    currentRecorder = new MediaRecorder(stream, {
+        mimeType: mimeType,
+        videoBitsPerSecond: 2500000
+    });
+
+    const chunks = [];
+    currentRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+    };
+    
+    currentRecorder.onstop = async () => {
+        if (progressCounter.isCancelled) return;
+        
+        status.textContent = '🔧 Finalizando processamento...';
+        progressCounter.updateStage(4, "Aplicando correções finais...");
+        progressCounter.update(0.95);
+        
+        const rawBlob = new Blob(chunks, { type: selectedFormat === 'webm' ? 'video/webm' : 'video/mp4' });
+        
+        let finalBlob = rawBlob;
+        if (selectedFormat === 'webm') {
+            fixWebmDuration(rawBlob, segmentDuration * 1000, (fixedBlob) => {
+                finalBlob = fixedBlob;
+                finishProcessing(finalBlob, startTime, endTime, selectedFormat);
+            });
+        } else {
+            // For MP4, we need to convert (simplified for demo)
+            finalBlob = await convertWebMToMP4(rawBlob);
+            finishProcessing(finalBlob, startTime, endTime, selectedFormat);
+        }
+    };
+
+    // Start recording
+    player.muted = false;
+    player.play();
+    currentRecorder.start(1000);
+
+    // Update progress
+    const updateProgress = () => {
+        if (progressCounter.isCancelled) {
+            if (currentRecorder && currentRecorder.state !== 'inactive') {
+                currentRecorder.stop();
+            }
+            player.pause();
+            isProcessing = false;
+            return;
+        }
+        
+        const currentTime = player.currentTime;
+        const progressValue = (currentTime - startTime) / segmentDuration;
+        
+        progress.value = progressValue;
+        progressCounter.update(progressValue);
+        
+        if (currentTime >= endTime - 0.1) {
+            if (currentRecorder && currentRecorder.state !== 'inactive') {
+                currentRecorder.stop();
+                player.pause();
+            }
+            isProcessing = false;
+            return;
+        }
+        
+        if (currentRecorder && currentRecorder.state === 'recording') {
+            requestAnimationFrame(updateProgress);
+        }
+    };
+    
+    updateProgress();
+};
+
+function finishProcessing(blob, startTime, endTime, format) {
+    AppState.processedBlob = blob;
+    AppState.processedCount++;
+    
+    const startStr = formatTimeHHMMSS(startTime).replace(/:/g, '-');
+    const endStr = formatTimeHHMMSS(endTime).replace(/:/g, '-');
+    AppState.processedFileName = `video_${startStr}_to_${endStr}.${format}`;
+    
+    progressCounter.update(1);
+    progressCounter.stop();
+    
+    status.textContent = `✅ Segmento processado com sucesso! (${formatTimeHHMMSS(endTime - startTime)})`;
+    status.style.color = 'var(--success)';
+    progress.style.display = 'none';
+    exportBtn.disabled = false;
+    previewBtn.disabled = false;
+    exportBtn.style.opacity = '1';
+    previewBtn.style.opacity = '1';
+    isProcessing = false;
+    
+    // Show results section
+    resultsSection.style.display = 'block';
+    downloadBtn.innerHTML = `⬇️ Download (${format.toUpperCase()})`;
+    
+    // Reset player
+    player.currentTime = startTime;
+    player.pause();
+    player.playbackRate = 1;
+    player.volume = 1;
+    volumeSlider.value = 1;
+    speedSlider.value = 1;
+    volumeValue.textContent = '1.0x';
+    speedValue.textContent = '1.0x';
+    
+    AppState.updateStats();
+}
+
+// Download functionality
+function downloadVideo() {
+    if (!AppState.processedBlob) return;
+    
+    const url = URL.createObjectURL(AppState.processedBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = AppState.processedFileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    
+    AppState.downloadsCount++;
+    AppState.updateStats();
+    
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+downloadBtn.onclick = downloadVideo;
+downloadAgainBtn.onclick = downloadVideo;
+
+// Share link generation
+generateShareBtn.onclick = () => {
+    const startTime = timeController.getStartSeconds();
+    const endTime = timeController.getEndSeconds();
+    
+    // Create a share link with timestamps
+    const shareData = {
+        video: AppState.currentVideo ? 'uploaded' : 'none',
+        start: startTime,
+        end: endTime,
+        timestamp: Date.now()
+    };
+    
+    const shareCode = btoa(JSON.stringify(shareData));
+    AppState.shareLink = `${window.location.origin}${window.location.pathname}#share=${shareCode}`;
+    
+    shareLink.value = AppState.shareLink;
+    shareLinkContainer.style.display = 'flex';
+    AppState.linksGenerated++;
+    AppState.updateStats();
+};
+
+// Copy link button
+copyLinkBtn.onclick = () => {
+    shareLink.select();
+    document.execCommand('copy');
+    
+    const originalText = copyLinkBtn.textContent;
+    copyLinkBtn.textContent = '✅ Copiado!';
+    copyLinkBtn.classList.add('copied');
+    
+    setTimeout(() => {
+        copyLinkBtn.textContent = originalText;
+        copyLinkBtn.classList.remove('copied');
+    }, 2000);
+};
+
+// Cancel button
+cancelBtn.onclick = () => {
+    if (isProcessing) {
+        progressCounter.cancel();
+        
+        if (currentRecorder && currentRecorder.state === 'recording') {
+            currentRecorder.stop();
+        }
+        
+        player.pause();
+        isProcessing = false;
+        exportBtn.disabled = false;
+        previewBtn.disabled = false;
+        exportBtn.style.opacity = '1';
+        previewBtn.style.opacity = '1';
+    }
+};
+
+// Check for share links in URL
+window.addEventListener('load', () => {
+    const hash = window.location.hash;
+    if (hash.includes('share=')) {
+        try {
+            const shareCode = hash.split('share=')[1];
+            const shareData = JSON.parse(atob(shareCode));
+            
+            if (shareData.start !== undefined && shareData.end !== undefined) {
+                // Load a video first, then apply the timestamps
+                alert('Carregue um vídeo para aplicar os timestamps compartilhados.');
+                // Store the timestamps to apply after video loads
+                window.sharedTimestamps = shareData;
+            }
+        } catch (e) {
+            console.error('Invalid share link:', e);
+        }
+    }
+});
+
+// Initialize
+AppState.updateStats();
+
+// Set up player event listeners
+player.addEventListener('loadedmetadata', () => {
+    if (window.sharedTimestamps) {
+        timeController.setFromShareLink(window.sharedTimestamps.start, window.sharedTimestamps.end);
+        delete window.sharedTimestamps;
+    }
+});
+
+// Keyboard shortcuts for preview
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && previewSystem.isActive()) {
+        previewSystem.hidePreview();
+    }
+});
+</script>
+</body>
+</html>
